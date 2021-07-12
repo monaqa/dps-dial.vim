@@ -126,8 +126,8 @@ export async function main(denops: Denops): Promise<void> {
   await execute(
     denops,
     `
-    nnoremap <Space>a ${cmdSelect}${cmdOperator("increment")}${cmdTextobj}
-    nnoremap <Space>x ${cmdSelect}${cmdOperator("decrement")}${cmdTextobj}
+    nnoremap <Plug>(dps-dial-increment) ${cmdSelect}${cmdOperator("increment")}${cmdTextobj}
+    nnoremap <Plug>(dps-dial-decrement) ${cmdSelect}${cmdOperator("decrement")}${cmdTextobj}
     `,
   );
 }
