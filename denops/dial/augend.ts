@@ -2,6 +2,10 @@
  * 被加数の型や被加数そのものの定義。
  */
 
+import { format, parse } from "./deps.ts"
+
+// let moment: moment.Moment = moment();
+
 export type findResult = { range: textRange; add: addOperation };
 export type addOperation = (
   text: string,
@@ -9,7 +13,7 @@ export type addOperation = (
 ) => { text: string; cursor: number } | null;
 export type textRange = { from: number; to: number };
 
-type Augend = {
+export type Augend = {
   desc: string;
   find(
     line: string,
@@ -42,12 +46,11 @@ export const augendDecimalNumber: Augend = {
       const matchText = match[0];
       const endpos = match.index + matchText.length;
       if (endpos >= cursor) {
-        // const from = toByteIdx(line, match.index);
-        // const to = toByteIdx(line, endpos);
         const from = match.index;
         const to = endpos;
         console.log({matchText, from, to})
         range = { from, to };
+        break;
       }
     }
     if (range === null) {
@@ -65,46 +68,65 @@ export const augendDecimalNumber: Augend = {
   },
 };
 
-// type Augend<T> = {
-//   desc: string;
-//   find: (
-//     line: string,
-//     cursor: number,
-//   ) => { from: number; to: number; meta: T } | null;
-//   add: (
-//     text: string,
-//     addend: number,
-//     meta: T,
-//   ) => { text: string; cursor: number };
-// };
-//
-// export const augendDecimalNumber: Augend<undefined> = {
-//   desc: "Decimal nonnegative integer.",
-//   find(line: string, cursor: number) {
-//     const re = /\d+/g;
-//     const matches = line.matchAll(re);
-//     for (const match of matches) {
-//       if (match.index === undefined) {
-//         continue;
-//       }
-//       console.log({ index: match.index, match: match[0], cursor: cursor });
-//       if (match.index + match[0].length >= cursor) {
-//         return {
-//           from: match.index,
-//           to: match.index + match[0].length,
-//           meta: undefined,
-//         };
-//       }
-//     }
-//     return null;
-//   },
-//   add(text, addend, _) {
-//     let num = parseInt(text);
-//     num = num + addend;
-//     text = String(num);
-//     return {
-//       text,
-//       cursor: text.length,
-//     };
-//   },
-// };
+export const augendDate: Augend = {
+  desc: "'2021/07/12' style date.",
+  find(line, cursor) {
+    const re = /(\d{4})\/(\d{2})\/(\d{2})/g;
+    const matches = line.matchAll(re);
+    let range = null;
+    let kind: "year" | "month" | "day" = "day";
+
+    for (const match of matches) {
+      if (match.index === undefined) {
+        continue;
+      }
+      const matchText = match[0];
+      const endpos = match.index + matchText.length;
+      if (endpos >= cursor) {
+        const from = match.index;
+        const to = endpos;
+        console.log({matchText, from, to})
+        const relCursor = cursor - match.index;
+        if (relCursor >= 0 && relCursor <= 4) {
+          kind = "year";
+        }
+        if (relCursor > 4 && relCursor <= 7) {
+          kind = "month";
+        }
+        range = { from, to };
+        break;
+      }
+    }
+    if (range === null) {
+      return null;
+    }
+
+    function add(text: string, addend: number) {
+      let date: Date = parse(text, "yyyy/MM/dd");
+      let cursor = text.length;
+      switch (kind) {
+        case "year": {
+          const year = date.getFullYear();
+          date.setFullYear(year + addend);
+          cursor = 4;
+        }
+          break;
+        case "month": {
+          const month = date.getMonth();
+          date.setMonth(month + addend);
+          cursor = 7;
+        }
+          break;
+        case "day": {
+          const day = date.getDate();
+          date.setDate(day + addend);
+        }
+          break;
+      }
+      text = format(date, "yyyy/MM/dd");
+      return { text, cursor };
+    }
+
+    return { range, add };
+  },
+};

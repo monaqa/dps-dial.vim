@@ -1,5 +1,5 @@
 import { Denops, ensureNumber, execute, fn, isString } from "./deps.ts";
-import { augendDecimalNumber, findResult, toByteIdx, toStringIdx } from "./augend.ts";
+import { addOperation, Augend, augendDate, augendDecimalNumber, findResult, textRange, toByteIdx, toStringIdx } from "./augend.ts";
 
 export async function main(denops: Denops): Promise<void> {
   function isDirection(x: unknown): x is "increment" | "decrement" {
@@ -7,7 +7,13 @@ export async function main(denops: Denops): Promise<void> {
   }
 
   let dialCount = 1;
-  let findResult: findResult | null = null;
+  let range: textRange | null = null;
+  let addOperation: addOperation | null = null;
+  const validAugends: Augend[] = [
+    augendDecimalNumber,
+    augendDate
+  ];
+  let activeAugend: Augend = augendDate;
 
   function replaceRange(
     s: string,
@@ -24,7 +30,15 @@ export async function main(denops: Denops): Promise<void> {
       ensureNumber(count);
       dialCount = count;
 
-      // const line = await fn.getline(denops, ".");
+      const col = await fn.col(denops, ".") as number;
+      const line = await fn.getline(denops, ".");
+      const cursor = toStringIdx(line, col);
+
+      activeAugend = augendDate;
+      const findResult = activeAugend.find(line, cursor);
+      if (findResult !== null) {
+        addOperation = findResult.add;
+      }
       return Promise.resolve();
     },
 
@@ -32,21 +46,15 @@ export async function main(denops: Denops): Promise<void> {
       if (!isDirection(direction)) {
         throw new Error("direction must be 'increment' or 'decrement'.");
       }
-
-      // const regSave = await fn.getreg(denops, "@");
-      // await execute(denops, "normal! `[v`]y");
-
-      // const regText = await fn.getreg(denops, "@") as string;
-      // console.log({ regText: regText });
-      if (findResult === null) {
+      if (range === null || addOperation === null) {
         return Promise.resolve();
       }
-      const { from, to } = findResult.range;
+      const { from, to } = range;
 
       const line = await fn.getline(denops, ".");
       const text = line.substr(from, to);
       const addend = (direction == "increment") ? dialCount : -dialCount;
-      const addResult = findResult.add(
+      const addResult = addOperation(
         text,
         addend,
       );
@@ -55,36 +63,27 @@ export async function main(denops: Denops): Promise<void> {
       }
       const newLine = replaceRange(
         line,
-        findResult.range.from,
-        findResult.range.to,
+        range.from,
+        range.to,
         addResult.text,
       );
       await fn.setline(denops, ".", newLine);
-      fn.cursor(denops, ".", toByteIdx(line, findResult.range.from + addResult.cursor));
-      // await fn.setreg(denops, "@", text);
-      // await execute(denops, "normal! `[v`]p");
-      // await fn.setreg(denops, "@", regSave);
+      fn.cursor(denops, ".", toByteIdx(line, range.from + addResult.cursor));
 
       return Promise.resolve();
     },
 
     async textobj(): Promise<unknown> {
-      // const lnum = await fn.line(denops, ".") as number;
       const col = await fn.col(denops, ".") as number;
       const line = await fn.getline(denops, ".");
       const cursor = toStringIdx(line, col);
-      findResult = augendDecimalNumber.find(line, cursor);
+      const findResult = activeAugend.find(line, cursor);
+      if (findResult === null) {
+        range = null;
+        return Promise.resolve();
+      }
       console.log(findResult);
-      // const line = await fn.getline(denops, ".");
-      // console.log(lnum, col, line);
-      // const match = augendDecimalNumber.find(line, col);
-      // if (match === null) {
-      //   return Promise.resolve();
-      // }
-      // await execute(denops, "normal! v");
-      // await fn.cursor(denops, lnum, match.from + 1);
-      // await execute(denops, "normal! o");
-      // await fn.cursor(denops, lnum, match.to);
+      range = findResult.range;
       return Promise.resolve();
     },
   };
@@ -105,6 +104,3 @@ export async function main(denops: Denops): Promise<void> {
     `,
   );
 }
-
-// aaaa  2691 bbb
-// ああああ  3108  aaa
