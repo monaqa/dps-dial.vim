@@ -34,11 +34,38 @@ export async function main(denops: Denops): Promise<void> {
       const line = await fn.getline(denops, ".");
       const cursor = toStringIdx(line, col);
 
-      activeAugend = augendDate;
-      const findResult = activeAugend.find(line, cursor);
-      if (findResult !== null) {
-        addOperation = findResult.add;
+      let interimAugend = null;
+      // 小さいほど優先度が高い。初期値は何よりも優先されない値。
+      let interimScore: [number, number, number] = [3, 0, 0];
+      let interimResult = null;
+      for (const augend of validAugends) {
+        const result = augend.find(line, cursor);
+        if (result === null ) {
+          continue;
+        }
+        const range = result.range;
+
+        /// cursor が range に含まれている場合は最優先 (0)
+        /// cursor が range より手前にある場合は次に優先 (1)
+        /// cursor が range より後ろにある場合は最も優先度が低い (2)
+        const firstScore = (cursor > range.to) ? 2 : (( cursor < range.from ) ? 1 : 0);
+        /// firstScore が同じなら、 range は前にあればあるほど優先度が高い
+        const secondScore = range.from;
+        /// secondScore も同じなら、range が広いほど優先度が高い
+        const thirdScore = -range.to;
+        const score: [number, number, number] = [firstScore, secondScore, thirdScore];
+        if (score < interimScore) {
+          interimAugend = augend;
+          interimResult = result;
+          interimScore = score;
+        }
       }
+
+      if (interimAugend === null) {
+        return Promise.resolve();
+      }
+      activeAugend = interimAugend;
+      addOperation = (interimResult as findResult).add; // ここが null になることはロジック上ないはず
       return Promise.resolve();
     },
 
