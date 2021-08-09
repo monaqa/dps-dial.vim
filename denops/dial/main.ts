@@ -1,22 +1,20 @@
 import { Denops } from "https://deno.land/x/denops_std@v1.0.0/mod.ts";
 import { execute } from "https://deno.land/x/denops_std@v1.0.0/helper/mod.ts";
 import { globals } from "https://deno.land/x/denops_std@v1.0.0/variable/mod.ts";
-import { ensureNumber } from "https://deno.land/x/unknownutil@v1.1.0/mod.ts";
 import {
-  AddOperation,
+  ensureNumber,
+  ensureString,
+} from "https://deno.land/x/unknownutil@v1.1.0/mod.ts";
+import {
   Augend,
   Direction,
+  dummyAugend,
   ensureDirection,
-  FindResult,
   TextRange,
 } from "./type.ts";
 import * as fn from "https://deno.land/x/denops_std@v1.0.0/function/mod.ts";
 import { toStringIdx } from "./util.ts";
-import {
-  defaultAugendConfigs,
-  ensureAugendConfigs,
-  generateAugendConfig,
-} from "./augend.ts";
+import { AugendConfig, generateAugendConfig } from "./augend.ts";
 
 // dps-dial.vim の中核をなす処理を記述する。
 // Denops インスタンスを内部に持たないため、
@@ -26,18 +24,15 @@ class DialHandler {
   private count: number;
   // テキストオブジェクトとして指定する範囲。
   private range: TextRange | null;
-  // オペレータとして実際に行うテキスト編集。
-  private addOperation: AddOperation | null;
   // 現在アクティブな augend.
-  private activeAugend: Augend;
+  private activeAugend: Augend | null;
   // 現在有効な（<C-a> などを押したときに候補として考慮される） augend のリスト。
   private augendCandidates: Augend[];
 
   constructor(augendCandidates: Augend[]) {
     this.count = 1;
     this.range = null;
-    this.addOperation = null;
-    this.activeAugend = (_line, _cursor) => null;
+    this.activeAugend = null;
     this.augendCandidates = augendCandidates;
   }
 
@@ -57,15 +52,7 @@ class DialHandler {
     this.range = range;
   }
 
-  getAddOperation(): AddOperation | null {
-    return this.addOperation;
-  }
-
-  setAddOperation(addOperation: AddOperation | null) {
-    this.addOperation = addOperation;
-  }
-
-  getActiveAugend(): Augend {
+  getActiveAugend(): Augend | null {
     return this.activeAugend;
   }
 
@@ -73,31 +60,36 @@ class DialHandler {
     this.activeAugend = augend;
   }
 
-  getAugendCandidates(): Augend[] {
+  getAugends(): Augend[] {
     return this.augendCandidates;
   }
 
-  setAugendCandidates(augends: Augend[]) {
-    this.augendCandidates = augends;
-  }
-
   // 現在行、カーソル位置、カウンタの値を受け取り、
-  // 最適な augend を選んで count, activeAugend, addOperation を更新する。
+  // 最適な augend を選んで count, activeAugend を更新する。
   // <C-a> や <C-x> が呼ばれた場合はこの関数も呼ばれるが、
   // ドットリピートのときはこの処理が飛ばされる。
-  selectAugend(line: string, cursor: number, count: number) {
+  async selectAugend(
+    line: string,
+    cursor: number,
+    count: number,
+    customAugends?: Augend[],
+  ) {
     this.count = count;
+    const augends = customAugends ?? this.augendCandidates;
 
     let interimAugend = null;
     let interimScore: [number, number, number] = [3, 0, 0];
-    let interimResult = null;
 
-    for (const augend of this.augendCandidates) {
-      const result = augend(line, cursor);
-      if (result === null) {
+    for (const augend of augends) {
+      let range = null;
+      if (augend.findStateful === undefined) {
+        range = await augend.find(line, cursor);
+      } else {
+        range = await augend.findStateful(line, cursor);
+      }
+      if (range === null) {
         continue;
       }
-      const range = result.range;
 
       /// cursor が range に含まれている場合は最優先 (0)
       /// cursor が range より手前にある場合は次に優先 (1)
@@ -117,16 +109,10 @@ class DialHandler {
 
       if (this.isLessScore(score, interimScore)) {
         interimAugend = augend;
-        interimResult = result;
         interimScore = score;
       }
     }
-    if (interimAugend === null) {
-      return;
-    }
     this.activeAugend = interimAugend;
-    // interimAugend が非 null 値を持つ時点で interimResult には値が入っているので安全。
-    this.addOperation = (interimResult as FindResult).add;
   }
 
   // スコアを辞書式に比較する。
@@ -147,12 +133,15 @@ class DialHandler {
   // 現在の count, range, addOperation に基づいて新しい行とカーソル位置を返す。
   // ただし、行内容に更新がないときは line フィールドは無い。
   // 同様にカーソル位置に変更がないときは cursor フィールドは無い。
-  operate(
+  async operate(
     line: string,
     cursor: number,
     direction: Direction,
-  ): { line?: string; cursor?: number } {
-    if (this.range === null || this.addOperation === null) {
+  ): Promise<{ line?: string; cursor?: number }> {
+    if (this.range === null) {
+      return {};
+    }
+    if (this.activeAugend === null) {
       return {};
     }
     const { from, to } = this.range;
@@ -160,7 +149,7 @@ class DialHandler {
     const toUtf16 = toStringIdx(line, to);
     const text = line.substr(fromUtf16, toUtf16 - fromUtf16);
     const addend = this.getAddend(direction);
-    const addResult = this.addOperation(text, cursor, addend);
+    const addResult = await this.activeAugend.add(text, cursor, addend);
     let newLine = undefined;
     let newCursor = undefined;
     if (addResult.text !== undefined) {
@@ -183,37 +172,48 @@ class DialHandler {
 
   // 現在行、カーソル位置をもとに、現在の activeAugend に基づいて変更対象の range を更新する。
   // その結果、range が null になることもある。
-  findTextRange(line: string, cursor: number) {
-    const result = this.activeAugend(line, cursor);
-    if (result === null) {
+  async findTextRange(line: string, cursor: number) {
+    if (this.activeAugend === null) {
       this.range = null;
-    } else {
-      this.range = result.range;
+      return;
     }
+    this.range = await this.activeAugend.find(line, cursor);
   }
 }
 
 export async function main(denops: Denops): Promise<void> {
-  let augends: Augend[] = [];
-
-  try {
-    const configarray = await globals.get(denops, "dps_dial#augends");
-    ensureAugendConfigs(configarray);
-    augends = configarray.map(generateAugendConfig);
-  } catch (e) {
-    console.error(e)
-    augends = defaultAugendConfigs.map(generateAugendConfig);
-  }
-
-  const dialHandler = new DialHandler(augends);
+  // const configarray = await globals.get(denops, "dps_dial#augends", []) as AugendConfig[];
+  // const augends = (configarray ?? []).map((conf) => generateAugendConfig(denops, conf));
+  const dialHandler = new DialHandler([]);
 
   denops.dispatcher = {
-    async selectAugend(count: unknown): Promise<void> {
+    async selectAugend(count: unknown, register: unknown): Promise<void> {
+      ensureString(register);
       ensureNumber(count);
       const col = await fn.col(denops, ".");
       const line = await fn.getline(denops, ".");
 
-      dialHandler.selectAugend(line, col, count);
+      if (register === '"') {
+        const configarray = await globals.get(
+          denops,
+          `dps_dial#augends`,
+          [],
+        ) as AugendConfig[];
+        const augends = (configarray ?? []).map((conf) =>
+          generateAugendConfig(denops, conf)
+        );
+        await dialHandler.selectAugend(line, col, count, augends);
+      } else {
+        const configarray = await globals.get(
+          denops,
+          `dps_dial#augends#register#${register}`,
+          [],
+        ) as AugendConfig[];
+        const augends = (configarray ?? []).map((conf) =>
+          generateAugendConfig(denops, conf)
+        );
+        await dialHandler.selectAugend(line, col, count, augends);
+      }
 
       return Promise.resolve();
     },
@@ -224,7 +224,7 @@ export async function main(denops: Denops): Promise<void> {
       const lineNum = await fn.line(denops, ".");
       const line = await fn.getline(denops, ".");
 
-      const result = dialHandler.operate(line, col, direction);
+      const result = await dialHandler.operate(line, col, direction);
 
       if (result.line !== undefined) {
         await fn.setline(denops, ".", result.line);
@@ -245,14 +245,14 @@ export async function main(denops: Denops): Promise<void> {
       const col = await fn.col(denops, ".");
       const line = await fn.getline(denops, ".");
 
-      dialHandler.findTextRange(line, col);
+      await dialHandler.findTextRange(line, col);
 
       return Promise.resolve();
     },
   };
 
   const cmdSelect =
-    `<Cmd>call denops#request("${denops.name}", "selectAugend", [v:count1])<CR>`;
+    `<Cmd>call denops#request("${denops.name}", "selectAugend", [v:count1, v:register])<CR>`;
   const cmdTextobj =
     `<Cmd>call denops#request("${denops.name}", "textobj", [v:count])<CR>`;
   function cmdOperator(direction: "increment" | "decrement") {
