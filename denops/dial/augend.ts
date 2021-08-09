@@ -2,6 +2,7 @@ import {
   ensureArray,
   isObject,
 } from "https://deno.land/x/unknownutil@v1.1.0/mod.ts";
+import { AugendConfigConstant, augendConstant, ensureAugendConfigConstant } from "./augend/constant.ts";
 import {
   AugendConfigNumber,
   augendNumber,
@@ -10,10 +11,12 @@ import {
 } from "./augend/number.ts";
 import { Augend } from "./type.ts";
 
-export type AugendConfig = "number" | {
-  kind: "number";
-  opts: AugendConfigNumber;
-};
+type RequiredConfig<Kind, Opts> = {kind: Kind, opts: Opts}
+type OptionalConfig<Kind, Opts> = Kind | {kind: Kind, opts: Opts}
+
+export type AugendConfig =
+  OptionalConfig<"number", AugendConfigNumber>
+  | RequiredConfig<"constant", AugendConfigConstant>
 
 export function ensureAugendConfigs(xs: unknown): asserts xs is AugendConfig[] {
   ensureArray(xs);
@@ -32,6 +35,9 @@ export function ensureAugendConfigs(xs: unknown): asserts xs is AugendConfig[] {
     switch (x.kind) {
       case "number":
         ensureAugendConfigNumber(x.opts);
+        break;
+      case "constant":
+        ensureAugendConfigConstant(x.opts);
         break;
       default:
         throw new Error("unknown kind.");
@@ -52,5 +58,7 @@ export function generateAugendConfig(conf: AugendConfig): Augend {
   switch (conf.kind) {
     case "number":
       return augendNumber(conf.opts);
+    case "constant":
+      return augendConstant(conf.opts);
   }
 }
