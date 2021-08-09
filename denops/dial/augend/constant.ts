@@ -66,7 +66,7 @@ export function augendConstant(conf: AugendConfigConstant): Augend {
       return Promise.resolve(null);
     },
 
-    add(text: string, _cursor: number, addend: number) {
+    add(text: string, addend: number, _cursor?: number) {
       let idx = elems.indexOf(text);
       if (cyclic) {
         idx = (lenElems + (idx + addend) % lenElems) % lenElems;

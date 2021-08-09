@@ -26,13 +26,13 @@ export function augendUser(denops: Denops, conf: AugendConfigUser): Augend {
       ) as TextRange | null;
       return Promise.resolve(result);
     },
-    async add(text, cursor, addend) {
+    async add(text, addend, cursor?) {
       const result = await denops.call(
         "denops#callback#call",
         conf.add,
         text,
-        cursor,
         addend,
+        cursor,
       ) as { text?: string; cursor?: number };
       return Promise.resolve(result);
     },

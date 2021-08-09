@@ -149,7 +149,7 @@ class DialHandler {
     const toUtf16 = toStringIdx(line, to);
     const text = line.substr(fromUtf16, toUtf16 - fromUtf16);
     const addend = this.getAddend(direction);
-    const addResult = await this.activeAugend.add(text, cursor, addend);
+    const addResult = await this.activeAugend.add(text, addend, cursor);
     let newLine = undefined;
     let newCursor = undefined;
     if (addResult.text !== undefined) {

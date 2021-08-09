@@ -33,7 +33,7 @@ export type TextRange = { from: number; to: number };
 
 export type AddOperation = (
   text: string,
-  cursor: number,
   addend: number,
+  cursor?: number,
 ) => Promise<AddResult>;
 export type AddResult = { text?: string; cursor?: number };

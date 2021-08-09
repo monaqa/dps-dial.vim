@@ -54,7 +54,7 @@ class AugendDate implements Augend {
     return Promise.resolve(null);
   }
 
-  add(text: string, _cursor: number, addend: number) {
+  add(text: string, addend: number, _cursor?: number) {
     const dateFormat = "yyyy/MM/dd";
     const date: Date = parse(text, dateFormat);
     let cursor = text.length;
