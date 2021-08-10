@@ -13,7 +13,7 @@ import {
   TextRange,
 } from "./type.ts";
 import * as fn from "https://deno.land/x/denops_std@v1.0.0/function/mod.ts";
-import { toStringIdx } from "./util.ts";
+import { toByteIdx, toStringIdx } from "./util.ts";
 import { AugendConfig, generateAugendConfig } from "./augend.ts";
 
 // dps-dial.vim の中核をなす処理を記述する。
@@ -129,6 +129,40 @@ class DialHandler {
     return false;
   }
 
+  // 対象行、選択範囲、カーソル位置、増減の方向を受け取り、
+  // 現在の count, range, activeAugend に基づいて検索 + 増減を行い、
+  // 結果得られる新しい行とカーソル位置を返す。
+  // ただし、行内容に更新がないときは line フィールドは無い。
+  // 同様にカーソル位置に変更がないときは cursor フィールドは無い。
+  async operateVisual(
+    line: string,
+    selectedRange: {from: number, to?: number},
+    direction: Direction,
+  ): Promise<{ line?: string; }> {
+    if (this.activeAugend === null) {
+      return {};
+    }
+    const {from: selectedFrom, to: selectedTo} = selectedRange;
+    const selectedFromUtf16 = toStringIdx(line, selectedFrom);
+    const selectedToUtf16 = (selectedTo === undefined) ? line.length : toStringIdx(line, selectedTo);
+    const linePartial = line.substring(selectedFromUtf16, selectedToUtf16);
+    const range = await this.activeAugend.find(linePartial, 0);
+    if (range === null) {
+      return {};
+    }
+    const addend = this.getAddend(direction);
+    const fromUtf16 = selectedFromUtf16 + toStringIdx(linePartial, range.from);
+    const toUtf16 = selectedFromUtf16 + toStringIdx(linePartial, range.to);
+    const text = line.substring(fromUtf16, toUtf16);
+    const addResult = await this.activeAugend.add(text, addend, selectedFromUtf16 - fromUtf16);
+    console.log({line, fromUtf16, toUtf16, text, addResult});
+    let newLine = undefined;
+    if (addResult.text !== undefined) {
+      newLine = this.replaceRange(line, fromUtf16, toUtf16, addResult.text);
+    }
+    return { line: newLine };
+  }
+
   // 現在行、カーソル位置、増減の方向を受け取り、
   // 現在の count, range, addOperation に基づいて新しい行とカーソル位置を返す。
   // ただし、行内容に更新がないときは line フィールドは無い。
@@ -187,38 +221,85 @@ export async function main(denops: Denops): Promise<void> {
   const dialHandler = new DialHandler([]);
 
   denops.dispatcher = {
-    async selectAugend(count: unknown, register: unknown): Promise<void> {
+    async selectAugendNormal(count: unknown, register: unknown): Promise<void> {
       ensureString(register);
       ensureNumber(count);
       const col = await fn.col(denops, ".");
       const line = await fn.getline(denops, ".");
 
-      if (['"', '+', '*'].includes(register)) {
-        const configarray = await globals.get(
-          denops,
-          `dps_dial#augends`,
-          [],
-        ) as AugendConfig[];
-        const augends = (configarray ?? []).map((conf) =>
-          generateAugendConfig(denops, conf)
-        );
-        await dialHandler.selectAugend(line, col, count, augends);
-      } else {
-        const configarray = await globals.get(
-          denops,
-          `dps_dial#augends#register#${register}`,
-          [],
-        ) as AugendConfig[];
-        const augends = (configarray ?? []).map((conf) =>
-          generateAugendConfig(denops, conf)
-        );
-        await dialHandler.selectAugend(line, col, count, augends);
-      }
+      const varName = (['"', "+", "*"].includes(register))
+        ? `dps_dial#augends`
+        : `dps_dial#augends#register#${register}`;
+      const configarray = await globals.get(
+        denops,
+        varName,
+        [],
+      ) as AugendConfig[];
+      const augends = (configarray ?? []).map((conf) =>
+        generateAugendConfig(denops, conf)
+      );
+      await dialHandler.selectAugend(line, col, count, augends);
 
       return Promise.resolve();
     },
 
-    async operator(_type: unknown, direction: unknown): Promise<void> {
+    async selectAugendVisual(count: unknown, register: unknown): Promise<void> {
+      ensureString(register);
+      ensureNumber(count);
+
+      const mode = await fn.mode(denops, 0) as "v" | "V" | "\x16";
+      const c1 = await fn.getpos(denops, "v");
+      const c2 = await fn.getpos(denops, ".");
+
+      let text: string;
+      switch (mode) {
+        case "v": {
+          const lineNum = Math.min(c1[1], c2[1]);
+          text = await fn.getline(denops, lineNum);
+          if (c1[1] == c2[1]) {
+            text = text.substring(
+              toStringIdx(text, c1[2]),
+              toStringIdx(text, c2[2]),
+            );
+          } else {
+            text = text.substr(toStringIdx(text, c1[2]));
+          }
+          break;
+        }
+
+        case "V": {
+          const lineNum = Math.min(c1[1], c2[1]);
+          text = await fn.getline(denops, lineNum);
+          break;
+        }
+
+        case "\x16": {
+          const lineNum = Math.min(c1[1], c2[1]);
+          const cs = Math.min(c1[2], c2[2]);
+          const ce = Math.max(c1[2], c2[2]);
+          text = await fn.getline(denops, lineNum);
+          text = text.substring(toStringIdx(text, cs), toStringIdx(text, ce));
+          break;
+        }
+      }
+
+      const varName = (['"', "+", "*"].includes(register))
+        ? `dps_dial#augends`
+        : `dps_dial#augends#register#${register}`;
+      const configarray = await globals.get(
+        denops,
+        varName,
+        [],
+      ) as AugendConfig[];
+      const augends = (configarray ?? []).map((conf) =>
+        generateAugendConfig(denops, conf)
+      );
+      await dialHandler.selectAugend(text, 0, count, augends);
+
+      return Promise.resolve();
+    },
+
+    async operatorNormal(_type: unknown, direction: unknown): Promise<void> {
       ensureDirection(direction);
       const col = await fn.col(denops, ".");
       const lineNum = await fn.line(denops, ".");
@@ -231,6 +312,59 @@ export async function main(denops: Denops): Promise<void> {
       }
       if (result.cursor !== undefined) {
         await fn.cursor(denops, lineNum, result.cursor);
+      }
+
+      return Promise.resolve();
+    },
+
+    async operatorVisual(_type: unknown, direction: unknown): Promise<void> {
+      ensureDirection(direction);
+      // 一度 VISUAL モードを抜けてしまうらしい
+      const mode = await fn.visualmode(denops, 0) as "v" | "V" | "\x16";
+      const pos1 = await fn.getpos(denops, "'<");
+      const pos2 = await fn.getpos(denops, "'>");
+
+      // 1行に対して行の置換処理を行う関数
+      async function replaceText(lnum: number, range: {from: number, to?: number}, direction: Direction) {
+        const line = await fn.getline(denops, lnum);
+        const result = await dialHandler.operateVisual(line, range, direction);
+        if (result.line !== undefined) {
+          await fn.setline(denops, lnum, result.line);
+        }
+      }
+
+      // 行ごとに順に置換処理を行っていく
+      const posStart = (pos1[1] < pos2[1]) ? pos1 : pos2;
+      const posEnd = (pos1[1] < pos2[1]) ? pos2 : pos1;
+      switch (mode) {
+        case "v": {
+          if (pos1[1] == pos2[1]) {
+            await replaceText(pos1[1], {from: Math.min(pos1[2], pos2[2]), to: Math.max(pos1[2], pos2[2])}, direction);
+          } else {
+            let lnum = posStart[1];
+            await replaceText(lnum, {from: posStart[2]}, direction);
+            lnum++;
+            for (lnum; lnum < posEnd[1] ; lnum++ ) {
+              await replaceText(lnum, {from: 0}, direction);
+            }
+            await replaceText(posEnd[1], {from: 0, to: posEnd[2]}, direction);
+          }
+          break;
+        }
+        case "V": {
+            for (let lnum = posStart[1]; lnum <= posEnd[1] ; lnum++ ) {
+              await replaceText(lnum, {from: 0}, direction);
+            }
+          break;
+        }
+        case "\x16": {
+          const colStart = (pos1[2] < pos2[2]) ? pos1[2] : pos2[2];
+          const colEnd = (pos1[2] < pos2[2]) ? pos2[2] : pos1[2];
+          for (let lnum = posStart[1]; lnum <= posEnd[1] ; lnum++ ) {
+            await replaceText(lnum, {from: colStart, to: colEnd}, direction);
+          }
+          break;
+        }
       }
 
       return Promise.resolve();
@@ -251,23 +385,34 @@ export async function main(denops: Denops): Promise<void> {
     },
   };
 
-  const cmdSelect =
-    `<Cmd>call denops#request("${denops.name}", "selectAugend", [v:count1, v:register])<CR>`;
+  const cmdSelectNormal =
+    `<Cmd>call denops#request("${denops.name}", "selectAugendNormal", [v:count1, v:register])<CR>`;
+  const cmdSelectVisual =
+    `<Cmd>call denops#request("${denops.name}", "selectAugendVisual", [v:count1, v:register])<CR>`;
   const cmdTextobj =
     `<Cmd>call denops#request("${denops.name}", "textobj", [v:count])<CR>`;
-  function cmdOperator(direction: "increment" | "decrement") {
-    return `<Cmd>let &opfunc="dps_dial#operator_${direction}"<CR>g@`;
+  function cmdOperator(
+    direction: "increment" | "decrement",
+    mode: "normal" | "visual",
+  ) {
+    return `<Cmd>let &opfunc="dps_dial#operator_${direction}_${mode}"<CR>g@`;
   }
 
   await execute(
     denops,
     `
-    nnoremap <Plug>(dps-dial-increment) ${cmdSelect}${
-      cmdOperator("increment")
+    nnoremap <Plug>(dps-dial-increment) ${cmdSelectNormal}${
+      cmdOperator("increment", "normal")
     }${cmdTextobj}
-    nnoremap <Plug>(dps-dial-decrement) ${cmdSelect}${
-      cmdOperator("decrement")
+    nnoremap <Plug>(dps-dial-decrement) ${cmdSelectNormal}${
+      cmdOperator("decrement", "normal")
     }${cmdTextobj}
+    xnoremap <Plug>(dps-dial-increment) ${cmdSelectVisual}${
+      cmdOperator("increment", "visual")
+    }
+    xnoremap <Plug>(dps-dial-decrement) ${cmdSelectVisual}${
+      cmdOperator("decrement", "visual")
+    }
     `,
   );
 }

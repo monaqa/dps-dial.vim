@@ -72,8 +72,8 @@ export function augendConstant(conf: AugendConfigConstant): Augend {
         idx = (lenElems + (idx + addend) % lenElems) % lenElems;
       } else {
         idx = idx + addend;
-        if (idx < 0)idx = 0;
-        if (idx >= lenElems)idx = lenElems - 1;
+        if (idx < 0) idx = 0;
+        if (idx >= lenElems) idx = lenElems - 1;
       }
       text = elems[idx];
       return Promise.resolve({ text, cursor: toByteIdx(text, text.length) });
