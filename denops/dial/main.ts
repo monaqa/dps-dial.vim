@@ -193,7 +193,7 @@ export async function main(denops: Denops): Promise<void> {
       const col = await fn.col(denops, ".");
       const line = await fn.getline(denops, ".");
 
-      if (register === '"') {
+      if (['"', '+', '*'].includes(register)) {
         const configarray = await globals.get(
           denops,
           `dps_dial#augends`,
