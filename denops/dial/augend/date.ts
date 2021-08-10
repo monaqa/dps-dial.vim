@@ -27,31 +27,20 @@ class AugendDate implements Augend {
     return Promise.resolve(null);
   }
 
-  findStateful(line: string, cursor: number) {
-    const re = /(\d{4})\/(\d{2})\/(\d{2})/g;
-    const matches = line.matchAll(re);
-
-    for (const match of matches) {
-      if (match.index === undefined) {
-        continue;
-      }
-      const matchText = match[0];
-      const endpos = match.index + matchText.length;
-      if (endpos >= cursor) {
-        const from = match.index;
-        const to = endpos;
-        const relCursor = cursor - match.index;
-        if (relCursor >= 0 && relCursor <= 4) {
-          this.kind = "year";
-        } else if (relCursor > 4 && relCursor <= 7) {
-          this.kind = "month";
-        } else {
-          this.kind = "day";
-        }
-        return Promise.resolve({ from, to });
-      }
+  async findStateful(line: string, cursor: number) {
+    const range = await this.find(line, cursor);
+    if (range === null) {
+      return Promise.resolve(null);
     }
-    return Promise.resolve(null);
+    const relCursor = cursor - range.from;
+    if (relCursor >= 0 && relCursor <= 4) {
+      this.kind = "year";
+    } else if (relCursor > 4 && relCursor <= 7) {
+      this.kind = "month";
+    } else {
+      this.kind = "day";
+    }
+    return Promise.resolve(range);
   }
 
   add(text: string, addend: number, _cursor?: number) {

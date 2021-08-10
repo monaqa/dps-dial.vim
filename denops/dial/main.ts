@@ -136,16 +136,18 @@ class DialHandler {
   // 同様にカーソル位置に変更がないときは cursor フィールドは無い。
   async operateVisual(
     line: string,
-    selectedRange: {from: number, to?: number},
+    selectedRange: { from: number; to?: number },
     direction: Direction,
-  ): Promise<{ line?: string; }> {
+  ): Promise<{ line?: string }> {
     if (this.activeAugend === null) {
       return {};
     }
-    const {from: selectedFrom, to: selectedTo} = selectedRange;
+    const { from: selectedFrom, to: selectedTo } = selectedRange;
     const selectedFromUtf16 = toStringIdx(line, selectedFrom);
-    const selectedToUtf16 = (selectedTo === undefined) ? line.length : toStringIdx(line, selectedTo);
-    const linePartial = line.substring(selectedFromUtf16, selectedToUtf16);
+    const selectedToUtf16 = (selectedTo === undefined)
+      ? line.length
+      : toStringIdx(line, selectedTo);
+    const linePartial = line.substring(selectedFromUtf16, selectedToUtf16 + 1);
     const range = await this.activeAugend.find(linePartial, 0);
     if (range === null) {
       return {};
@@ -154,8 +156,12 @@ class DialHandler {
     const fromUtf16 = selectedFromUtf16 + toStringIdx(linePartial, range.from);
     const toUtf16 = selectedFromUtf16 + toStringIdx(linePartial, range.to);
     const text = line.substring(fromUtf16, toUtf16);
-    const addResult = await this.activeAugend.add(text, addend, selectedFromUtf16 - fromUtf16);
-    console.log({line, fromUtf16, toUtf16, text, addResult});
+    const addResult = await this.activeAugend.add(
+      text,
+      addend,
+      selectedFromUtf16 - fromUtf16,
+    );
+    console.log({ line, fromUtf16, toUtf16, text, addResult });
     let newLine = undefined;
     if (addResult.text !== undefined) {
       newLine = this.replaceRange(line, fromUtf16, toUtf16, addResult.text);
@@ -258,11 +264,12 @@ export async function main(denops: Denops): Promise<void> {
           text = await fn.getline(denops, lineNum);
           if (c1[1] == c2[1]) {
             text = text.substring(
-              toStringIdx(text, c1[2]),
-              toStringIdx(text, c2[2]),
+              toStringIdx(text, Math.min(c1[2], c2[2])) - 1,
+              toStringIdx(text, Math.max(c1[2], c2[2])),
             );
+            console.log({ text });
           } else {
-            text = text.substr(toStringIdx(text, c1[2]));
+            text = text.substr(toStringIdx(text, c1[2]) - 1);
           }
           break;
         }
@@ -278,7 +285,10 @@ export async function main(denops: Denops): Promise<void> {
           const cs = Math.min(c1[2], c2[2]);
           const ce = Math.max(c1[2], c2[2]);
           text = await fn.getline(denops, lineNum);
-          text = text.substring(toStringIdx(text, cs), toStringIdx(text, ce));
+          text = text.substring(
+            toStringIdx(text, cs) - 1,
+            toStringIdx(text, ce),
+          );
           break;
         }
       }
@@ -321,11 +331,15 @@ export async function main(denops: Denops): Promise<void> {
       ensureDirection(direction);
       // 一度 VISUAL モードを抜けてしまうらしい
       const mode = await fn.visualmode(denops, 0) as "v" | "V" | "\x16";
-      const pos1 = await fn.getpos(denops, "'<");
-      const pos2 = await fn.getpos(denops, "'>");
+      const pos1 = await fn.getpos(denops, "'[");
+      const pos2 = await fn.getpos(denops, "']");
 
       // 1行に対して行の置換処理を行う関数
-      async function replaceText(lnum: number, range: {from: number, to?: number}, direction: Direction) {
+      async function replaceText(
+        lnum: number,
+        range: { from: number; to?: number },
+        direction: Direction,
+      ) {
         const line = await fn.getline(denops, lnum);
         const result = await dialHandler.operateVisual(line, range, direction);
         if (result.line !== undefined) {
@@ -339,29 +353,40 @@ export async function main(denops: Denops): Promise<void> {
       switch (mode) {
         case "v": {
           if (pos1[1] == pos2[1]) {
-            await replaceText(pos1[1], {from: Math.min(pos1[2], pos2[2]), to: Math.max(pos1[2], pos2[2])}, direction);
+            await replaceText(pos1[1], {
+              from: Math.min(pos1[2], pos2[2]) - 1,
+              to: Math.max(pos1[2], pos2[2]) - 1,
+            }, direction);
           } else {
             let lnum = posStart[1];
-            await replaceText(lnum, {from: posStart[2]}, direction);
+            await replaceText(lnum, { from: posStart[2] - 1 }, direction);
             lnum++;
-            for (lnum; lnum < posEnd[1] ; lnum++ ) {
-              await replaceText(lnum, {from: 0}, direction);
+            for (lnum; lnum < posEnd[1]; lnum++) {
+              await replaceText(lnum, { from: 0 }, direction);
             }
-            await replaceText(posEnd[1], {from: 0, to: posEnd[2]}, direction);
+            await replaceText(
+              posEnd[1],
+              { from: 0, to: posEnd[2] - 1 },
+              direction,
+            );
           }
           break;
         }
         case "V": {
-            for (let lnum = posStart[1]; lnum <= posEnd[1] ; lnum++ ) {
-              await replaceText(lnum, {from: 0}, direction);
-            }
+          for (let lnum = posStart[1]; lnum <= posEnd[1]; lnum++) {
+            await replaceText(lnum, { from: 0 }, direction);
+          }
           break;
         }
         case "\x16": {
           const colStart = (pos1[2] < pos2[2]) ? pos1[2] : pos2[2];
           const colEnd = (pos1[2] < pos2[2]) ? pos2[2] : pos1[2];
-          for (let lnum = posStart[1]; lnum <= posEnd[1] ; lnum++ ) {
-            await replaceText(lnum, {from: colStart, to: colEnd}, direction);
+          for (let lnum = posStart[1]; lnum <= posEnd[1]; lnum++) {
+            await replaceText(
+              lnum,
+              { from: colStart - 1, to: colEnd - 1 },
+              direction,
+            );
           }
           break;
         }
