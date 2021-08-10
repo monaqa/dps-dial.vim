@@ -1,4 +1,4 @@
-# dps-dial.nvim
+# dps-dial.vim: Extended increment/decrement plugin
 
 **NOTICE: This plugin is work-in-progress yet. User interface is subject to
 change without notice.**
@@ -28,6 +28,43 @@ Plug 'monaqa/dps-dial.vim'
 ## Usage
 
 ```vim
-nmap <Space>a <Plug>(dps-dial-increment)
-nmap <Space>x <Plug>(dps-dial-decrement)
+nmap <C-a> <Plug>(dps-dial-increment)
+nmap <C-x> <Plug>(dps-dial-decrement)
+vmap <C-a> <Plug>(dps-dial-increment)
+vmap <C-x> <Plug>(dps-dial-decrement)
 ```
+
+## Features
+
+- [x] counter
+- [x] dot-repeat
+- [ ] wide range of augends
+  - [ ] number in various format
+  - [ ] date/time in various format
+  - [x] keyword switching (true <->)
+  - [x] user-defined augends
+- [x] configuring augend rules
+- [x] specifying augend rules by register
+- [x] VISUAL mode mappings
+  - [x] normal VISUAL mode
+  - [x] line-wise VISUAL mode
+  - [x] block-wise VISUAL mode
+  - [ ] `g<C-a>` / `g<C-x>`
+
+### Increment/Decrement Various Type of Augends
+
+#### Number
+
+#### Date
+
+#### Char
+
+### Specify Addend with Counter
+
+### Dot-Repeat
+
+### Specify Augend Rules with Register
+
+### Configure Augend Rules
+
+### Define Custom Augend Rules
