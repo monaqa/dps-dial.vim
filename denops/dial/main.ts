@@ -17,6 +17,12 @@ export async function main(denops: Denops): Promise<void> {
   const handler = DialContextHandler.createHandler();
 
   denops.dispatcher = {
+    /**
+     * 現在行 + カーソル位置の情報を元に増減すべき augend rule を決定する
+     * handler.selectAugend() を呼び出す。
+     *
+     * ノーマルモードで呼び出される。
+     */
     async selectAugendNormal(count: unknown, register: unknown): Promise<void> {
       ensureString(register);
       ensureNumber(count);
@@ -39,7 +45,13 @@ export async function main(denops: Denops): Promise<void> {
       return Promise.resolve();
     },
 
-    async selectAugendVisual(count: unknown, register: unknown): Promise<void> {
+    /**
+     * VISUAL 選択の最初の行の情報を元に増減すべき augend rule を決定する
+     * handler.selectAugend() を呼び出す。
+     *
+     * ビジュアルモードで呼び出される。
+     */
+    async selectAugend(count: unknown, register: unknown): Promise<void> {
       ensureString(register);
       ensureNumber(count);
 
@@ -98,6 +110,12 @@ export async function main(denops: Denops): Promise<void> {
       return Promise.resolve();
     },
 
+    /**
+     * オペレータ処理。
+     *
+     * handler.operate() を呼び出し、得られた文字列やカーソル位置に基づいて
+     * 実際のバッファを操作する。
+     */
     async operatorNormal(_type: unknown, direction: unknown): Promise<void> {
       ensureDirection(direction);
       const col = await fn.col(denops, ".");
@@ -116,6 +134,11 @@ export async function main(denops: Denops): Promise<void> {
       return Promise.resolve();
     },
 
+    /**
+     * オペレータ処理。
+     *
+     * handler.operateVisual() を行ごとに呼び出し、実際のバッファを操作する。
+     */
     async operatorVisual(
       _type: unknown,
       direction: unknown,
@@ -199,6 +222,12 @@ export async function main(denops: Denops): Promise<void> {
       return Promise.resolve();
     },
 
+    /**
+     * テキストオブジェクト。
+     *
+     * 現在の行の情報を元に範囲を選択する handler.findTextRange() を呼び出す。
+     * また、ドットリピートの際は指定されたカウンタの値を受け取って加数を更新する。
+     */
     async textobj(count: unknown): Promise<void> {
       ensureNumber(count);
       if (count != 0) {

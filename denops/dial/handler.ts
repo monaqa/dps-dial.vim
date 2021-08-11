@@ -105,15 +105,15 @@ export class DialContextHandler {
         continue;
       }
 
-      /// cursor が range に含まれている場合は最優先 (0)
-      /// cursor が range より手前にある場合は次に優先 (1)
-      /// cursor が range より後ろにある場合は最も優先度が低い (2)
+      // cursor が range に含まれている場合は最優先 (0)
+      // cursor が range より手前にある場合は次に優先 (1)
+      // cursor が range より後ろにある場合は最も優先度が低い (2)
       const firstScore = (cursor > range.to)
         ? 2
         : ((cursor < range.from) ? 1 : 0);
-      /// firstScore が同じなら、 range は前にあればあるほど優先度が高い
+      // firstScore が同じなら、 range は前にあればあるほど優先度が高い
       const secondScore = range.from;
-      /// secondScore も同じなら、range が広いほど優先度が高い
+      // secondScore も同じなら、range が広いほど優先度が高い
       const thirdScore = -range.to;
       const score: [number, number, number] = [
         firstScore,
