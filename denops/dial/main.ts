@@ -2,13 +2,13 @@ import { Denops } from "https://deno.land/x/denops_std@v1.0.0/mod.ts";
 import { execute } from "https://deno.land/x/denops_std@v1.0.0/helper/mod.ts";
 import { globals } from "https://deno.land/x/denops_std@v1.0.0/variable/mod.ts";
 import {
+ensureBoolean,
   ensureNumber,
   ensureString,
 } from "https://deno.land/x/unknownutil@v1.1.0/mod.ts";
 import {
   Augend,
   Direction,
-  dummyAugend,
   ensureDirection,
   TextRange,
 } from "./type.ts";
@@ -138,10 +138,12 @@ class DialHandler {
     line: string,
     selectedRange: { from: number; to?: number },
     direction: Direction,
+    tier?: number,
   ): Promise<{ line?: string }> {
     if (this.activeAugend === null) {
       return {};
     }
+    tier = tier ?? 1;
     const { from: selectedFrom, to: selectedTo } = selectedRange;
     const selectedFromUtf16 = toStringIdx(line, selectedFrom);
     const selectedToUtf16 = (selectedTo === undefined)
@@ -158,7 +160,7 @@ class DialHandler {
     const text = line.substring(fromUtf16, toUtf16);
     const addResult = await this.activeAugend.add(
       text,
-      addend,
+      addend * tier,
       selectedFromUtf16 - fromUtf16,
     );
     console.log({ line, fromUtf16, toUtf16, text, addResult });
@@ -327,12 +329,15 @@ export async function main(denops: Denops): Promise<void> {
       return Promise.resolve();
     },
 
-    async operatorVisual(_type: unknown, direction: unknown): Promise<void> {
+    async operatorVisual(_type: unknown, direction: unknown, stairlike: unknown): Promise<void> {
       ensureDirection(direction);
+      ensureBoolean(stairlike);
       // 一度 VISUAL モードを抜けてしまうらしい
       const mode = await fn.visualmode(denops, 0) as "v" | "V" | "\x16";
       const pos1 = await fn.getpos(denops, "'[");
       const pos2 = await fn.getpos(denops, "']");
+
+      let tier = 1;
 
       // 1行に対して行の置換処理を行う関数
       async function replaceText(
@@ -341,9 +346,12 @@ export async function main(denops: Denops): Promise<void> {
         direction: Direction,
       ) {
         const line = await fn.getline(denops, lnum);
-        const result = await dialHandler.operateVisual(line, range, direction);
+        const result = await dialHandler.operateVisual(line, range, direction, tier);
         if (result.line !== undefined) {
           await fn.setline(denops, lnum, result.line);
+          if (stairlike) {
+            tier++;
+          }
         }
       }
 
@@ -418,7 +426,7 @@ export async function main(denops: Denops): Promise<void> {
     `<Cmd>call denops#request("${denops.name}", "textobj", [v:count])<CR>`;
   function cmdOperator(
     direction: "increment" | "decrement",
-    mode: "normal" | "visual",
+    mode: "normal" | "visual" | "gvisual",
   ) {
     return `<Cmd>let &opfunc="dps_dial#operator_${direction}_${mode}"<CR>g@`;
   }
@@ -437,6 +445,12 @@ export async function main(denops: Denops): Promise<void> {
     }
     xnoremap <Plug>(dps-dial-decrement) ${cmdSelectVisual}${
       cmdOperator("decrement", "visual")
+    }
+    xnoremap g<Plug>(dps-dial-increment) ${cmdSelectVisual}${
+      cmdOperator("increment", "gvisual")
+    }
+    xnoremap g<Plug>(dps-dial-decrement) ${cmdSelectVisual}${
+      cmdOperator("decrement", "gvisual")
     }
     `,
   );
