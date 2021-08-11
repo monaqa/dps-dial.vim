@@ -14,7 +14,7 @@ import { AugendConfig, generateAugendConfig } from "./augend.ts";
 import { DialContextHandler } from "./handler.ts";
 
 export async function main(denops: Denops): Promise<void> {
-  const handler = new DialContextHandler();
+  const handler = DialContextHandler.createHandler();
 
   denops.dispatcher = {
     async selectAugendNormal(count: unknown, register: unknown): Promise<void> {
