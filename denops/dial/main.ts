@@ -159,7 +159,6 @@ class DialHandler {
       addend * tier,
       selectedFromUtf16 - fromUtf16,
     );
-    console.log({ line, fromUtf16, toUtf16, text, addResult });
     let newLine = undefined;
     if (addResult.text !== undefined) {
       newLine = this.replaceRange(line, fromUtf16, toUtf16, addResult.text);
@@ -265,7 +264,6 @@ export async function main(denops: Denops): Promise<void> {
               toStringIdx(text, Math.min(c1[2], c2[2])) - 1,
               toStringIdx(text, Math.max(c1[2], c2[2])),
             );
-            console.log({ text });
           } else {
             text = text.substr(toStringIdx(text, c1[2]) - 1);
           }
