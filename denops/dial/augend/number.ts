@@ -31,7 +31,7 @@ export function augendNumber(conf: AugendConfigNumber): Augend {
         const matchText = match[0];
         const endpos = match.index + matchText.length;
         const endposByte = toByteIdx(line, endpos);
-        if (endposByte >= cursor) {
+        if (cursor === null || endposByte >= cursor) {
           const from = toByteIdx(line, match.index);
           const to = endposByte;
           return Promise.resolve({ from, to });
@@ -40,7 +40,7 @@ export function augendNumber(conf: AugendConfigNumber): Augend {
       return Promise.resolve(null);
     },
 
-    add(text: string, addend: number, _cursor?: number) {
+    add(text: string, addend: number, _cursor: number | null) {
       let num = parseInt(text);
       const nDigitString = text.length;
       const nDigitActual = String(num).length;

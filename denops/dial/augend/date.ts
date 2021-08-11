@@ -8,7 +8,7 @@ class AugendDate implements Augend {
     this.kind = "day";
   }
 
-  find(line: string, cursor: number) {
+  find(line: string, cursor: number | null) {
     const re = /(\d{4})\/(\d{2})\/(\d{2})/g;
     const matches = line.matchAll(re);
 
@@ -18,7 +18,7 @@ class AugendDate implements Augend {
       }
       const matchText = match[0];
       const endpos = match.index + matchText.length;
-      if (endpos >= cursor) {
+      if (cursor === null || endpos >= cursor) {
         const from = match.index;
         const to = endpos;
         return Promise.resolve({ from, to });
@@ -27,10 +27,14 @@ class AugendDate implements Augend {
     return Promise.resolve(null);
   }
 
-  async findStateful(line: string, cursor: number) {
+  async findStateful(line: string, cursor: number | null) {
     const range = await this.find(line, cursor);
     if (range === null) {
       return Promise.resolve(null);
+    }
+    if (cursor === null) {
+      this.kind = "day";
+      return Promise.resolve(range);
     }
     const relCursor = cursor - range.from;
     if (relCursor >= 0 && relCursor <= 4) {
@@ -43,7 +47,7 @@ class AugendDate implements Augend {
     return Promise.resolve(range);
   }
 
-  add(text: string, addend: number, _cursor?: number) {
+  add(text: string, addend: number, _cursor: number | null) {
     const dateFormat = "yyyy/MM/dd";
     const date: Date = parse(text, dateFormat);
     let cursor = text.length;

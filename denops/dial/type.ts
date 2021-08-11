@@ -12,9 +12,9 @@ export function ensureDirection(x: unknown): asserts x is Direction {
 
 // export type Augend = (line: string, cursor: number) => FindResult | null;
 export interface Augend {
-  find(line: string, cursor: number): Promise<TextRange | null>;
+  find(line: string, cursor: number | null): Promise<TextRange | null>;
   add: AddOperation;
-  findStateful?(line: string, cursor: number): Promise<TextRange | null>;
+  findStateful?(line: string, cursor: number | null): Promise<TextRange | null>;
 }
 
 export const dummyAugend: Augend = {
@@ -31,6 +31,6 @@ export type TextRange = { from: number; to: number };
 export type AddOperation = (
   text: string,
   addend: number,
-  cursor?: number,
+  cursor: number | null,
 ) => Promise<AddResult>;
 export type AddResult = { text?: string; cursor?: number };

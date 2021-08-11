@@ -52,7 +52,7 @@ export function augendConstant(conf: AugendConfigConstant): Augend {
         const matchText = match[0];
         const endpos = match.index + matchText.length;
         const endposByte = toByteIdx(line, endpos);
-        if (endposByte >= cursor) {
+        if (cursor === null || endposByte >= cursor) {
           const from = toByteIdx(line, match.index);
           const to = endposByte;
           return Promise.resolve({ from, to });
@@ -61,7 +61,7 @@ export function augendConstant(conf: AugendConfigConstant): Augend {
       return Promise.resolve(null);
     },
 
-    add(text: string, addend: number, _cursor?: number) {
+    add(text: string, addend: number, _cursor: number | null) {
       let idx = elems.indexOf(text);
       if (cyclic) {
         idx = (lenElems + (idx + addend) % lenElems) % lenElems;
