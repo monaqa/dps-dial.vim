@@ -1,9 +1,5 @@
-import { Denops } from "https://deno.land/x/denops_std@v1.0.0/mod.ts";
-import {
-  AugendConfigConstant,
-  augendConstant,
-  ensureAugendConfigConstant,
-} from "./augend/constant.ts";
+import { Denops } from "./deps.ts";
+import { AugendConfigConstant, augendConstant } from "./augend/constant.ts";
 import { augendDate } from "./augend/date.ts";
 import {
   AugendConfigNumber,

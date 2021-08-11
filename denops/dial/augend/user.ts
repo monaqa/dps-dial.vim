@@ -1,5 +1,4 @@
-import { Denops } from "https://deno.land/x/denops_std@v1.0.0/mod.ts";
-import { ensureLike } from "https://deno.land/x/unknownutil@v1.1.0/mod.ts";
+import { Denops, ensureLike } from "../deps.ts";
 import { Augend, TextRange } from "../type.ts";
 
 type FuncId = string;

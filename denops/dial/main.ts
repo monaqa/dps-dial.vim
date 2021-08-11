@@ -1,19 +1,15 @@
-import { Denops } from "https://deno.land/x/denops_std@v1.0.0/mod.ts";
-import { execute } from "https://deno.land/x/denops_std@v1.0.0/helper/mod.ts";
-import { globals } from "https://deno.land/x/denops_std@v1.0.0/variable/mod.ts";
 import {
-ensureBoolean,
+  Denops,
+  ensureBoolean,
   ensureNumber,
   ensureString,
-} from "https://deno.land/x/unknownutil@v1.1.0/mod.ts";
-import {
-  Augend,
-  Direction,
-  ensureDirection,
-  TextRange,
-} from "./type.ts";
-import * as fn from "https://deno.land/x/denops_std@v1.0.0/function/mod.ts";
-import { toByteIdx, toStringIdx } from "./util.ts";
+  execute,
+  fn,
+  globals,
+} from "./deps.ts";
+
+import { Augend, Direction, ensureDirection, TextRange } from "./type.ts";
+import { toStringIdx } from "./util.ts";
 import { AugendConfig, generateAugendConfig } from "./augend.ts";
 
 // dps-dial.vim の中核をなす処理を記述する。
@@ -329,7 +325,11 @@ export async function main(denops: Denops): Promise<void> {
       return Promise.resolve();
     },
 
-    async operatorVisual(_type: unknown, direction: unknown, stairlike: unknown): Promise<void> {
+    async operatorVisual(
+      _type: unknown,
+      direction: unknown,
+      stairlike: unknown,
+    ): Promise<void> {
       ensureDirection(direction);
       ensureBoolean(stairlike);
       // 一度 VISUAL モードを抜けてしまうらしい
@@ -346,7 +346,12 @@ export async function main(denops: Denops): Promise<void> {
         direction: Direction,
       ) {
         const line = await fn.getline(denops, lnum);
-        const result = await dialHandler.operateVisual(line, range, direction, tier);
+        const result = await dialHandler.operateVisual(
+          line,
+          range,
+          direction,
+          tier,
+        );
         if (result.line !== undefined) {
           await fn.setline(denops, lnum, result.line);
           if (stairlike) {

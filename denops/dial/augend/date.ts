@@ -1,4 +1,4 @@
-import { format, parse } from "https://deno.land/std@0.103.0/datetime/mod.ts";
+import { format, parse } from "../deps.ts";
 import { Augend } from "../type.ts";
 
 class AugendDate implements Augend {

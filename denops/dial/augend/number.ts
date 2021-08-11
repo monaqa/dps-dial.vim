@@ -1,7 +1,4 @@
-import {
-  ensureBoolean,
-  ensureObject,
-} from "https://deno.land/x/unknownutil@v1.1.0/mod.ts";
+import { ensureBoolean, ensureObject } from "../deps.ts";
 import { Augend } from "../type.ts";
 import { toByteIdx } from "../util.ts";
 
