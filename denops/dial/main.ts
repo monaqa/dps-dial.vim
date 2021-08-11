@@ -12,13 +12,15 @@ import { Augend, Direction, ensureDirection, TextRange } from "./type.ts";
 import { toStringIdx } from "./util.ts";
 import { AugendConfig, generateAugendConfig } from "./augend.ts";
 
-// dps-dial.vim の中核をなす処理を記述する。
-// Denops インスタンスを内部に持たないため、
-// Vim に関する副作用は augend 内部の実装で行わない限り一切起こせない。
+/**
+ * dps-dial.vim の中核をなす処理を記述する。
+ * Denops インスタンスを内部に持たないため、
+ * Vim に関する副作用は augend 内部の実装で行わない限り一切起こせない。
+ */
 class DialHandler {
-  // ユーザ指定されたカウンタの値。
+  /** ユーザ指定されたカウンタの値。*/
   private count: number;
-  // テキストオブジェクトとして指定する範囲。
+  /** テキストオブジェクトとして指定する範囲。 */
   private range: TextRange | null;
   // 現在アクティブな augend.
   private activeAugend: Augend | null;
@@ -32,38 +34,27 @@ class DialHandler {
     this.augendCandidates = augendCandidates;
   }
 
+  /**
+   * this.count の値を見て addend を取得する。
+   * direction が "increment" なら this.count を、"decrement" なら -this.count を返す。
+   */
+  private getAddend(direction: Direction): number {
+    return (direction === "increment") ? this.count : -this.count;
+  }
+
+  /**
+   * this.count の値を n にセットする。
+   */
   setCount(n: number) {
     this.count = n;
   }
 
-  getAddend(direction: Direction): number {
-    return (direction === "increment") ? this.count : -this.count;
-  }
-
-  getRange(): TextRange | null {
-    return this.range;
-  }
-
-  setRange(range: TextRange | null) {
-    this.range = range;
-  }
-
-  getActiveAugend(): Augend | null {
-    return this.activeAugend;
-  }
-
-  setActiveAugend(augend: Augend) {
-    this.activeAugend = augend;
-  }
-
-  getAugends(): Augend[] {
-    return this.augendCandidates;
-  }
-
-  // 現在行、カーソル位置、カウンタの値を受け取り、
-  // 最適な augend を選んで count, activeAugend を更新する。
-  // <C-a> や <C-x> が呼ばれた場合はこの関数も呼ばれるが、
-  // ドットリピートのときはこの処理が飛ばされる。
+  /**
+   * 現在行、カーソル位置、カウンタの値を受け取り、
+   * 最適な augend を選んで count, activeAugend を更新する。
+   * <C-a> や <C-x> が呼ばれた場合はこの関数も呼ばれるが、
+   * ドットリピートのときはこの処理が飛ばされる。
+   */
   async selectAugend(
     line: string,
     cursor: number,
@@ -111,7 +102,7 @@ class DialHandler {
     this.activeAugend = interimAugend;
   }
 
-  // スコアを辞書式に比較する。
+  /** スコアを辞書式に比較する。 */
   private isLessScore(
     x: [number, number, number],
     y: [number, number, number],
@@ -166,10 +157,12 @@ class DialHandler {
     return { line: newLine };
   }
 
-  // 現在行、カーソル位置、増減の方向を受け取り、
-  // 現在の count, range, addOperation に基づいて新しい行とカーソル位置を返す。
-  // ただし、行内容に更新がないときは line フィールドは無い。
-  // 同様にカーソル位置に変更がないときは cursor フィールドは無い。
+  /**
+   * 現在行、カーソル位置、増減の方向を受け取り、
+   * 現在の count, range, addOperation に基づいて新しい行とカーソル位置を返す。
+   * ただし、行内容に更新がないときは line フィールドは無い。
+   * 同様にカーソル位置に変更がないときは cursor フィールドは無い。
+   */
   async operate(
     line: string,
     cursor: number,
@@ -207,8 +200,10 @@ class DialHandler {
     return s.substr(0, start) + substitute + s.substr(end);
   }
 
-  // 現在行、カーソル位置をもとに、現在の activeAugend に基づいて変更対象の range を更新する。
-  // その結果、range が null になることもある。
+  /**
+   * 現在行、カーソル位置をもとに、現在の activeAugend に基づいて変更対象の range を更新する。
+   * その結果、range が null になることもある。
+   */
   async findTextRange(line: string, cursor: number) {
     if (this.activeAugend === null) {
       this.range = null;
