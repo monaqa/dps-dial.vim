@@ -7,7 +7,8 @@ import {
   defaultAugendConfigNumber,
 } from "./augend/number.ts";
 import { AugendConfigUser, augendUser } from "./augend/user.ts";
-import { Augend } from "./type.ts";
+import { Augend, TextRange } from "./type.ts";
+import { toByteIdx } from "./util.ts";
 
 type RequiredConfig<Kind, Opts> = { kind: Kind; opts: Opts };
 type OptionalConfig<Kind, Opts> = Kind | { kind: Kind; opts: Opts };
@@ -39,4 +40,26 @@ export function generateAugendConfig(
     case "user":
       return augendUser(denops, conf.opts);
   }
+}
+
+export function findPatternAfterCursor(
+  re: RegExp,
+): (line: string, cursor: number | null) => Promise<TextRange | null> {
+  return (line: string, cursor: number | null) => {
+    const matches = line.matchAll(re);
+    for (const match of matches) {
+      if (match.index === undefined) {
+        continue;
+      }
+      const matchText = match[0];
+      const endpos = match.index + matchText.length;
+      const endposByte = toByteIdx(line, endpos);
+      if (cursor === null || endposByte >= cursor) {
+        const from = toByteIdx(line, match.index);
+        const to = endposByte;
+        return Promise.resolve({ from, to });
+      }
+    }
+    return Promise.resolve(null);
+  };
 }

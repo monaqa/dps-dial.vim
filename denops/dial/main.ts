@@ -1,4 +1,5 @@
 import {
+  buffers,
   Denops,
   ensureBoolean,
   ensureNumber,
@@ -6,7 +7,6 @@ import {
   execute,
   fn,
   globals,
-  buffers,
 } from "./deps.ts";
 
 import { Direction, ensureDirection } from "./type.ts";
@@ -31,8 +31,8 @@ export async function main(denops: Denops): Promise<void> {
       const line = await fn.getline(denops, ".");
 
       const buflocalVarName = (['"', "+", "*"].includes(register))
-      ? `dps_dial_augends`
-      : `dps_dial_augends_register_${register}`;
+        ? `dps_dial_augends`
+        : `dps_dial_augends_register_${register}`;
       let configarray: AugendConfig[];
       const bufferAugendsConfig = await buffers.get(denops, buflocalVarName);
       if (bufferAugendsConfig === null) {
@@ -267,11 +267,11 @@ export async function main(denops: Denops): Promise<void> {
   }
 
   // default values
-  const defaultAugends = ['number', 'date'];
+  const defaultAugends = ["number", "date"];
   globals.set(denops, "dps_dial#default_augends", defaultAugends);
   globals.set(denops, "dps_dial#augends", defaultAugends);
-  globals.set(denops, "dps_dial#augends#register#n", ['number']);
-  globals.set(denops, "dps_dial#augends#register#d", ['date']);
+  globals.set(denops, "dps_dial#augends#register#n", ["number"]);
+  globals.set(denops, "dps_dial#augends#register#d", ["date"]);
 
   await execute(
     denops,

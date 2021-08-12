@@ -1,3 +1,4 @@
+import { findPatternAfterCursor } from "../augend.ts";
 import { ensureBoolean, ensureObject } from "../deps.ts";
 import { Augend } from "../type.ts";
 import { toByteIdx } from "../util.ts";
@@ -21,24 +22,7 @@ export function augendNumber(conf: AugendConfigNumber): Augend {
   const natural = conf.natural ?? true;
 
   const augend: Augend = {
-    find(line, cursor) {
-      const re = (natural) ? (/\d+/g) : (/-?\d+/g);
-      const matches = line.matchAll(re);
-      for (const match of matches) {
-        if (match.index === undefined) {
-          continue;
-        }
-        const matchText = match[0];
-        const endpos = match.index + matchText.length;
-        const endposByte = toByteIdx(line, endpos);
-        if (cursor === null || endposByte >= cursor) {
-          const from = toByteIdx(line, match.index);
-          const to = endposByte;
-          return Promise.resolve({ from, to });
-        }
-      }
-      return Promise.resolve(null);
-    },
+    find: findPatternAfterCursor((natural) ? (/\d+/g) : (/-?\d+/g)),
 
     add(text: string, addend: number, _cursor: number | null) {
       let num = parseInt(text);

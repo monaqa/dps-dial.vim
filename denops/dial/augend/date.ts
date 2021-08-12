@@ -1,3 +1,4 @@
+import { findPatternAfterCursor } from "../augend.ts";
 import { format, parse } from "../deps.ts";
 import { Augend } from "../type.ts";
 
@@ -10,21 +11,7 @@ class AugendDate implements Augend {
 
   find(line: string, cursor: number | null) {
     const re = /(\d{4})\/(\d{2})\/(\d{2})/g;
-    const matches = line.matchAll(re);
-
-    for (const match of matches) {
-      if (match.index === undefined) {
-        continue;
-      }
-      const matchText = match[0];
-      const endpos = match.index + matchText.length;
-      if (cursor === null || endpos >= cursor) {
-        const from = match.index;
-        const to = endpos;
-        return Promise.resolve({ from, to });
-      }
-    }
-    return Promise.resolve(null);
+    return Promise.resolve(findPatternAfterCursor(re)(line, cursor));
   }
 
   async findStateful(line: string, cursor: number | null) {
