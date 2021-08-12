@@ -47,15 +47,19 @@ export function augendConstant(conf: AugendConfigConstant): Augend {
     find: findPatternAfterCursor(re),
 
     add(text: string, addend: number, _cursor: number | null) {
-      let idx = elems.indexOf(text);
+      const idx = elems.indexOf(text);
+      let newIdx;
       if (cyclic) {
-        idx = (lenElems + (idx + addend) % lenElems) % lenElems;
+        newIdx = (lenElems + (idx + addend) % lenElems) % lenElems;
       } else {
-        idx = idx + addend;
-        if (idx < 0) idx = 0;
-        if (idx >= lenElems) idx = lenElems - 1;
+        newIdx = idx + addend;
+        if (newIdx < 0) newIdx = 0;
+        if (newIdx >= lenElems) newIdx = lenElems - 1;
       }
-      text = elems[idx];
+      if (newIdx == idx) {
+        return Promise.resolve({ cursor: text.length });
+      }
+      text = elems[newIdx];
       return Promise.resolve({ text, cursor: toByteIdx(text, text.length) });
     },
   };

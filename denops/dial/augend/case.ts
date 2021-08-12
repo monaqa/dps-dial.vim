@@ -9,6 +9,7 @@ type AugendCases =
 
 export type AugendConfigCase = {
   cases: AugendCases[];
+  cyclic?: boolean;
 };
 
 export const defaultAugendConfigCase: AugendConfigCase = {
@@ -108,6 +109,7 @@ const casePatternMap = {
 export function augendCase(config: AugendConfigCase): Augend {
   const casePatterns = config.cases.map((c) => casePatternMap[c]);
   const lenPatterns = casePatterns.length;
+  const cyclic = config.cyclic ?? true;
 
   return {
     async find(line, cursor) {
@@ -140,12 +142,19 @@ export function augendCase(config: AugendConfigCase): Augend {
         console.error("dps-dial error: Unreachable!");
         return Promise.resolve({});
       }
-      const newIdx = (lenPatterns + (idx + addend) % lenPatterns) % lenPatterns;
+      let newIdx;
+      if (cyclic) {
+        newIdx = (lenPatterns + (idx + addend) % lenPatterns) % lenPatterns;
+      } else {
+        newIdx = idx + addend;
+        if (newIdx < 0) newIdx = 0;
+        if (newIdx >= lenPatterns) newIdx = lenPatterns - 1;
+      }
       if (newIdx == idx) {
         return Promise.resolve({ cursor: text.length });
       }
-      const newText = casePatterns[newIdx].toIdentifier(terms);
-      return Promise.resolve({ text: newText, cursor: newText.length });
+      text = casePatterns[newIdx].toIdentifier(terms);
+      return Promise.resolve({ text, cursor: text.length });
     },
   };
 }
