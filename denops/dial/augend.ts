@@ -9,12 +9,18 @@ import {
 import { AugendConfigUser, augendUser } from "./augend/user.ts";
 import { Augend, TextRange } from "./type.ts";
 import { toByteIdx } from "./util.ts";
+import {
+  augendCase,
+  AugendConfigCase,
+  defaultAugendConfigCase,
+} from "./augend/case.ts";
 
 type RequiredConfig<Kind, Opts> = { kind: Kind; opts: Opts };
 type OptionalConfig<Kind, Opts> = Kind | { kind: Kind; opts: Opts };
 
 export type AugendConfig =
   | OptionalConfig<"number", AugendConfigNumber>
+  | OptionalConfig<"case", AugendConfigCase>
   | RequiredConfig<"constant", AugendConfigConstant>
   | RequiredConfig<"user", AugendConfigUser>
   | "date";
@@ -27,6 +33,8 @@ export function generateAugendConfig(
     switch (conf) {
       case "number":
         return augendNumber(defaultAugendConfigNumber);
+      case "case":
+        return augendCase(defaultAugendConfigCase);
       case "date":
         return augendDate();
     }
@@ -35,6 +43,8 @@ export function generateAugendConfig(
   switch (conf.kind) {
     case "number":
       return augendNumber(conf.opts);
+    case "case":
+      return augendCase(conf.opts);
     case "constant":
       return augendConstant(conf.opts);
     case "user":
