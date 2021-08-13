@@ -35,6 +35,16 @@ export class DialContextHandler {
   private count: number;
 
   /**
+   * ドットリピートが累算的に行われるとき、その係数。
+   *
+   * 非 null 値のとき、ドットリピートを実行したときの増加値が 2, 3, ... と増加する。
+   * カウンタが 3 だったときは 3, 6, 9, ... と増加する。
+   * すなわち、ドットリピートが行われるたびに、カウンタの数だけ増加する。
+   * ただし、新たに <C-a> / <C-x> が実行されるとリセットされる。
+   */
+  private cumulativeAddend: number | null;
+
+  /**
    * 範囲選択時に決定された増減対象の範囲。
    */
   private range: TextRange | null;
@@ -46,10 +56,12 @@ export class DialContextHandler {
 
   constructor(
     count: number,
+    cumulativeAddend: number | null,
     range: TextRange | null,
     activeAugend: Augend | null,
   ) {
     this.count = count;
+    this.cumulativeAddend = cumulativeAddend;
     this.range = range;
     this.activeAugend = activeAugend;
   }
@@ -58,15 +70,21 @@ export class DialContextHandler {
    * 新たなハンドラを作成する。
    */
   static createHandler(): DialContextHandler {
-    return new DialContextHandler(1, null, null);
+    return new DialContextHandler(1, null, null, null);
   }
 
   /**
    * this.count の値を見て addend を取得する。
    * direction が "increment" なら this.count を、"decrement" なら -this.count を返す。
    */
-  private getAddend(direction: Direction): number {
-    return (direction === "increment") ? this.count : -this.count;
+  private calcAddend(direction: Direction): number {
+    const unitAddend = (direction === "increment") ? this.count : -this.count;
+    if (this.cumulativeAddend == null) {
+      return unitAddend;
+    } else {
+      this.cumulativeAddend += unitAddend;
+      return this.cumulativeAddend;
+    }
   }
 
   /**
@@ -88,8 +106,14 @@ export class DialContextHandler {
     cursor: number,
     count: number,
     augends: Augend[],
+    isCumulative?: boolean,
   ) {
     this.count = count;
+    if (isCumulative ?? false) {
+      this.cumulativeAddend = 0;
+    } else {
+      this.cumulativeAddend = null;
+    }
 
     let interimAugend = null;
     let interimScore: [number, number, number] = [3, 0, 0];
@@ -173,7 +197,7 @@ export class DialContextHandler {
     if (range === null) {
       return {};
     }
-    const addend = this.getAddend(direction);
+    const addend = this.calcAddend(direction);
     const fromUtf16 = selectedFromUtf16 + toStringIdx(linePartial, range.from);
     const toUtf16 = selectedFromUtf16 + toStringIdx(linePartial, range.to);
     const text = line.substring(fromUtf16, toUtf16);
@@ -213,7 +237,7 @@ export class DialContextHandler {
     const fromUtf16 = toStringIdx(line, from);
     const toUtf16 = toStringIdx(line, to);
     const text = line.substr(fromUtf16, toUtf16 - fromUtf16);
-    const addend = this.getAddend(direction);
+    const addend = this.calcAddend(direction);
     const addResult = await this.activeAugend.add(text, addend, cursor);
     let newLine = undefined;
     let newCursor = undefined;
