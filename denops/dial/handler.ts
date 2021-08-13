@@ -103,7 +103,7 @@ export class DialContextHandler {
    */
   async selectAugend(
     line: string,
-    cursor: number,
+    cursor: number | null,
     count: number,
     augends: Augend[],
     isCumulative?: boolean,
@@ -132,9 +132,9 @@ export class DialContextHandler {
       // cursor が range に含まれている場合は最優先 (0)
       // cursor が range より手前にある場合は次に優先 (1)
       // cursor が range より後ろにある場合は最も優先度が低い (2)
-      const firstScore = (cursor > range.to)
+      const firstScore = (cursor ?? 0 > range.to)
         ? 2
-        : ((cursor < range.from) ? 1 : 0);
+        : ((cursor ?? 0 < range.from) ? 1 : 0);
       // firstScore が同じなら、 range は前にあればあるほど優先度が高い
       const secondScore = range.from;
       // secondScore も同じなら、range が広いほど優先度が高い
@@ -173,9 +173,8 @@ export class DialContextHandler {
    *
    * 対象行、選択範囲、カーソル位置、増減の方向を受け取り、
    * 現在の count, range, activeAugend に基づいて検索 + 増減を行い、
-   * 結果得られる新しい行とカーソル位置を返す。
+   * 結果得られる新しい行を返す。
    * ただし、行内容に更新がないときは line フィールドは無い。
-   * 同様にカーソル位置に変更がないときは cursor フィールドは無い。
    */
   async operateVisual(
     line: string,

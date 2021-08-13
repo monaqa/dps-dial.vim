@@ -14,15 +14,18 @@ export function ensureAugendConfigConstant(
 ): asserts x is AugendConfigConstant {
   ensureObject(x);
   ensureArray(x.elements, isString);
+  if (!Object.prototype.hasOwnProperty.call(x, "elements")) {
+    throw new Error("'elements' field is required for the config corresponding to 'constant'.");
+  }
   if (x.elements.length <= 1) {
     throw new Error(
       "The number of elements must be greater than or equal to 2.",
     );
   }
-  if (x.hasOwnProperty("cyclic")) {
+  if (Object.prototype.hasOwnProperty.call(x, "cyclic")) {
     ensureBoolean(x.cyclic);
   }
-  if (x.hasOwnProperty("word")) {
+  if (Object.prototype.hasOwnProperty.call(x, "word")) {
     ensureBoolean(x.word);
   }
 }

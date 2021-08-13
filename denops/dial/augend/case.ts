@@ -1,4 +1,5 @@
 import { findPatternAfterCursor } from "../augend.ts";
+import { ensureArray, ensureBoolean, ensureObject, isString } from "../deps.ts";
 import { Augend, TextRange } from "../type.ts";
 
 type AugendCases =
@@ -7,10 +8,40 @@ type AugendCases =
   | "kebab-case"
   | "SCREAMING_SNAKE_CASE";
 
+const AUGEND_CASES = [
+  "camelCase",
+  "snake_case",
+  "kebab-case",
+  "SCREAMING_SNAKE_CASE",
+];
+
 export type AugendConfigCase = {
   cases: AugendCases[];
   cyclic?: boolean;
 };
+
+export function ensureAugendConfigCase(
+  x: unknown,
+): asserts x is AugendConfigCase {
+  ensureObject(x);
+  ensureArray(x.cases, isString);
+  if (!Object.prototype.hasOwnProperty.call(x, "cases")) {
+    throw new Error("'cases' field is required for the config corresponding to 'case'.");
+  }
+  if (x.cases.length <= 1) {
+    throw new Error(
+      "The number of kinds of case must be greater than or equal to 2.",
+    );
+  }
+  for (const elem of x.cases) {
+    if (!AUGEND_CASES.includes(elem)) {
+      throw new Error(`Invalid case name. Valid names are: ${ AUGEND_CASES }`);
+    }
+  }
+  if (Object.prototype.hasOwnProperty.call(x, "cyclic")) {
+    ensureBoolean(x.cyclic);
+  }
+}
 
 export const defaultAugendConfigCase: AugendConfigCase = {
   cases: ["camelCase", "snake_case"],

@@ -1,45 +1,94 @@
-import { Denops } from "./deps.ts";
-import { AugendConfigConstant, augendConstant } from "./augend/constant.ts";
+import { Denops, ensureArray, ensureObject } from "./deps.ts";
+import { AugendConfigConstant, augendConstant, ensureAugendConfigConstant } from "./augend/constant.ts";
 import { augendDate } from "./augend/date.ts";
 import {
   AugendConfigNumber,
   augendNumber,
-  defaultAugendConfigNumber,
+ensureAugendConfigNumber,
 } from "./augend/number.ts";
-import { AugendConfigUser, augendUser } from "./augend/user.ts";
+import { AugendConfigUser, augendUser, ensureAugendConfigUser } from "./augend/user.ts";
 import { Augend, TextRange } from "./type.ts";
 import { toByteIdx } from "./util.ts";
 import {
   augendCase,
   AugendConfigCase,
-  defaultAugendConfigCase,
+ensureAugendConfigCase,
 } from "./augend/case.ts";
 
-type RequiredConfig<Kind, Opts> = { kind: Kind; opts: Opts };
-type OptionalConfig<Kind, Opts> = Kind | { kind: Kind; opts: Opts };
-
 export type AugendConfig =
-  | OptionalConfig<"number", AugendConfigNumber>
-  | OptionalConfig<"case", AugendConfigCase>
-  | RequiredConfig<"constant", AugendConfigConstant>
-  | RequiredConfig<"user", AugendConfigUser>
-  | "date";
+  | {kind: "number", opts: AugendConfigNumber}
+  | {kind: "constant", opts: AugendConfigConstant}
+  | {kind: "case", opts: AugendConfigCase}
+  | {kind: "date", opts: Record<string, unknown>}
+  | {kind: "user", opts: AugendConfigUser}
+
+export function ensureAugendConfig(conf: unknown): asserts conf is AugendConfig {
+  ensureObject(conf);
+  if (!Object.prototype.hasOwnProperty.call(conf, "kind") || !Object.prototype.hasOwnProperty.call(conf, "opts")) {
+    throw new Error("Any augend config must have a field named 'kind' and 'opts'.");
+  }
+  switch (conf['kind']) {
+    case "number":
+      ensureAugendConfigNumber(conf['opts']);
+      break;
+    case "constant":
+      ensureAugendConfigConstant(conf['opts']);
+      break;
+
+    case "case":
+      ensureAugendConfigCase(conf['opts']);
+      break;
+
+    case "date":
+      break;
+
+    case "user":
+      ensureAugendConfigUser(conf['opts']);
+      break;
+
+    default:
+      throw new Error(`Unknown augend kind: ${conf['kind']}`);
+  }
+}
+
+export type AugendConfigOrString = string | AugendConfig
+
+export function ensureAugendConfigOrStringList(xs: unknown): asserts xs is AugendConfigOrString[] {
+  ensureArray(xs);
+  for (const x of xs) {
+    if (typeof x != "string") {
+      ensureAugendConfig(x);
+    }
+  }
+}
+
+export type AugendAliases = Record<string, AugendConfig>
+
+export function ensureAugendAliases(map: unknown): asserts map is AugendAliases {
+  ensureObject(map);
+  for (const key in map) {
+    ensureAugendConfig(map[key])
+  }
+}
+
+/**
+ * AugendConfigOrString の中に入っている文字列に対して aliases マップを適用する。
+ */
+export function applyAlias(x: AugendConfigOrString, aliases: AugendAliases): AugendConfig {
+  if (typeof x == "string") {
+    if ( aliases[x] === undefined ) {
+      throw new Error(`Undefined alias. Add '${ x }' key in alias map.`);
+    }
+    return aliases[x];
+  } else {
+    return x;
+  }
+}
 
 export function generateAugendConfig(
   denops: Denops,
   conf: AugendConfig,
 ): Augend {
-  if (typeof conf === "string") {
-    switch (conf) {
-      case "number":
-        return augendNumber(defaultAugendConfigNumber);
-      case "case":
-        return augendCase(defaultAugendConfigCase);
-      case "date":
-        return augendDate();
-    }
-  }
-
   switch (conf.kind) {
     case "number":
       return augendNumber(conf.opts);
@@ -49,6 +98,8 @@ export function generateAugendConfig(
       return augendConstant(conf.opts);
     case "user":
       return augendUser(denops, conf.opts);
+    case "date":
+      return augendDate();
   }
 }
 

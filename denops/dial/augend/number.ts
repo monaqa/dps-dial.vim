@@ -11,7 +11,7 @@ export function ensureAugendConfigNumber(
   x: unknown,
 ): asserts x is AugendConfigNumber {
   ensureObject(x);
-  if (x.hasOwnProperty("natural")) {
+  if (Object.prototype.hasOwnProperty.call(x, "natural")) {
     ensureBoolean(x.natural);
   }
 }
