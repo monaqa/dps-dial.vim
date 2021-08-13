@@ -24,7 +24,7 @@ class AugendDate implements Augend {
       return Promise.resolve(range);
     }
     const relCursor = cursor - range.from;
-    if (relCursor >= 0 && relCursor <= 4) {
+    if (relCursor > 0 && relCursor <= 4) {
       this.kind = "year";
     } else if (relCursor > 4 && relCursor <= 7) {
       this.kind = "month";
