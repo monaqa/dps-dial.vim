@@ -48,7 +48,7 @@ xmap g<C-x> g<Plug>(dps-dial-decrement)
 
 - `camelCase <-> snake_case` のトグル
 
-  - カーソル下にある識別子の記法（キャメルケース・スネークケース）をトグルすることができます。
+  - カーソル下にある識別子の記法（キャメルケース・スネークケースなど）をトグルすることができます。
   - デフォルトでは動かないため、 `g:dps_dial#augends` などの設定値をいじる必要があります。
 
 - 任意の単語の切り替え
@@ -90,13 +90,28 @@ date of exam: 2021/01/14
 
 `g:dps_dial#augends` にて設定されたルールに沿って増減が行なわれます。
 
+```vim
+let g:dps_dial#augends = [
+\   'number',
+\   'date',
+\   {'kind': 'constant', 'opts': {'elements': ['true', 'false']}},
+\   {'kind': 'case', 'opts': {'cases': ['camelCase', 'snake_case'], 'cyclic': v:true}},
+\ ]
+```
+
+ただし、バッファローカルな設定値 `b:dps_dial_augends` がある場合はそちらが設定として使われます。
+
+```vim
+autocmd FileType python let b:dps_dial#augends = ['number', {'kind': 'constant', 'opts': {'elements': ['True', 'False']}}]
+```
+
 ### レジスタ名指定による挙動の変更
 
 - `<C-a>` の代わりに `"x<C-a>` と打つと、
   `g:dps_dial#augends` の代わりに `g:dps_dial#augends#register#x` に書かれたルールに基づいて増減操作が行われます。
 - `<C-a>` の代わりに `"1<C-a>` と打つと、
-  直後に実行されるドットリピートの挙動が累加的になります。
-  （ドットリピートが実行されるたびに、加数が1ずつ増えていきます）
+  直後に実行されるドットリピートの挙動が累加的になります
+  （ドットリピートが実行されるたびに、加数が1ずつ増えていきます）。
 - `<C-a>` の代わりに `"X<C-a>` と打つと、
   `g:dps_dial#augends` の代わりに `g:dps_dial#augends#register#x` に書かれたルールに基づいて増減操作が行われ、
   なおかつ直後に実行されるドットリピートの挙動が累加的になります。
