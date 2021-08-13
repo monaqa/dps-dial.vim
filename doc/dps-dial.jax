@@ -1,0 +1,599 @@
+*dps-dial.txt* 日本語ヘルプ （最終更新：2021/08/13）
+
+Vimの標準機能である CTRL-A / CTRL-X を拡張し、英数字に限らない様々な文字列を
+インクリメント/デクリメントできるようにするパッケージです。
+
+Author: Mogami Shinichi (@monaqa) <mogassy{at}yahoo.co.jp>
+Version: 0.1.0
+License: MIT license
+		<https://github.com/monaqa/dps-dial.vim/blob/master/LICENSE>
+
+}}}
+
+==============================================================================
+CONTENTS								*dps-dial-contents*
+
+Requirements							|dps-dial-requirements|
+Introduction							|dps-dial-introduction|
+Keymappings								|dps-dial-keymappings|
+Augends									|dps-dial-augends|
+  Number								|dps-dial-augends-number|
+  Date									|dps-dial-augends-date|
+  Constant								|dps-dial-augends-constant|
+  Case									|dps-dial-augends-case|
+  User									|dps-dial-augends-user|
+Advanced Usage							|dps-dial-advanced|
+Configurations							|dps-dial-configurations|
+  Variables								|dps-dial-variables|
+
+==============================================================================
+REQUIREMENTS							*dps-dial-requirements*
+
+* Vim >= 8.1.2424 or Neovim >= 0.4.4
+* Deno >= 1.11.0
+* vim-denops/denops.vim >= v1.1.0
+  (<https://github.com/vim-denops/denops.vim>)
+
+==============================================================================
+INTRODUCTION							*dps-dial-introduction*
+
+*dps-dial.vim* は、標準の CTRL-A や CTRL-X、 g CTRL-A といったコマンドの動作を
+拡張し、バッファ上にある様々な形式の文字列を快適にインクリメント/デクリメント
+できるようにするパッケージです。
+
+* 数値以外の文字列（日付など）の増減
+* カウンタ指定
+* ドットリピート
+* 累積ドットリピート
+* 増減ルールの指定
+
+などをサポートしています。
+
+標準ではキーマップの置き換えまでは行わないため、プラグインをインストールした上
+で、以下のような記述を設定ファイルに追加する必要があります。
+>
+	nmap  <C-a>  <Plug>(dps-dial-increment)
+	nmap  <C-x>  <Plug>(dps-dial-decrement)
+	xmap  <C-a>  <Plug>(dps-dial-increment)
+	xmap  <C-x>  <Plug>(dps-dial-decrement)
+	xmap g<C-a> g<Plug>(dps-dial-increment)
+	xmap g<C-x> g<Plug>(dps-dial-decrement)
+<
+
+長ったらしい `<Plug>(dps-dial-increment)` がヘルプに何度も出現するのを避けるた
+め、以下のヘルプではこれらのキーマップが設定されていることを前提とします。すな
+わちヘルプ上で <C-a> が出てきた場合、（標準の <C-a>、といった特別な文脈が無い
+限り）`<Plug>(dps-dial-increment)` が提供するキーコマンドを指すものとします。
+
+==============================================================================
+KEYMAPPINGS								*dps-dial-keymappings*
+
+										*dps-dial-keymappings-normal*
+Normal Mode~
+
+<Plug>(dps-dial-increment)					*<Plug>(dps-dial-increment)*
+
+	カーソル下または後の被加数を [count] だけインクリメントします。既存の
+	CTRL-A コマンドの代替です。
+	カーソルと同じ行にある被加数にのみ反応します。基本的にはカーソルより手前に
+	ある被加数には反応しないものの、被加数の種類によっては例外的にカーソルの手
+	前にあってもインクリメントを許すものがあります。(cf.
+	|dial-augends-markup#markdown#header|)
+
+<Plug>(dps-dial-decrement)					*<Plug>(dps-dial-decrement)*
+
+	カーソル下または後の被加数を [count] だけデクリメントします。既存の
+	CTRL-X コマンドの代替です。
+
+Visual Mode~
+
+{Visual}<Plug>(dps-dial-increment)			*v_<Plug>(dps-dial-increment)*
+
+	以下のどのモードに入っているかによって挙動が変化します。
+	* 通常の VISUAL モード (|v|)
+	* 行 VISUAL モード (|V|)
+	* 矩形 VISUAL モード (|CTRL-V|)
+
+	通常のビジュアルモード (|v|) の場合、ビジュアル選択されたテキスト中の被加
+	数を [count] だけインクリメントします。既存の CTRL-A コマンドの代替です。
+	選択したテキストが完全一致である必要があります。たとえば十進数のインクリメ
+	ント(||)及び日付のインクリメント (||) が有効になっている場合、`12/3456`の
+	うち `12/3` が選択されていれば12月3日を表す文字列とみなされ `12/4456` とな
+	りますが、`12` のみが選択されている場合は単なる数値列とみなされ `13/3456`
+	となります。
+
+	行選択ビジュアルモード (|V|) の場合、
+	ビジュアル行選択されたテキスト中の被加数を、行ごとに [count] だけインクリ
+	メントします。各行ごとに被加数の位置を探索し、マッチしたもののうち最も手前
+	の被加数を一つだけ対象とします。
+
+	矩形選択ビジュアルモード (|CTRL-V|) の場合は行選択ビジュアルモードの場合と
+	似ているものの、マッチする対象が矩形選択された範囲に絞られます。通常のビジ
+	ュアルモードとことなり、選択範囲が完全一致している必要はありません。
+
+{Visual}<Plug>(dps-dial-decrement)			*v_<Plug>(dps-dial-decrement)*
+
+	ビジュアル選択されたテキスト中の被加数を [count] だけデクリメントします。
+	既存の CTRL-X コマンドの代替です。
+
+{Visual}g<Plug>(dps-dial-increment)			*v_g_<Plug>(dps-dial-increment)*
+
+	ビジュアル選択されたテキストの被加数を、上から加算的に[count]だけ増加させ
+	ます。既存の g CTRL-A コマンドの代替です。箇条書きや予定表など、 一定の数
+	値ずつ増加する等差数列を作成したい場合に便利です。たとえば
+>
+		2021/09/12
+		2021/09/12
+		2021/09/12
+		2021/09/12
+<
+	という日付のリストがある時、2行目へ移動して下3行を行選択ビジュアルモードで
+	選択し、 `7g<C-a>` と押すと
+>
+		2021/09/12
+		2021/09/19
+		2021/09/26
+		2021/10/03
+<
+	のように、1週間ごとの日付が得られます（日付の被加数 `date` が有効のときに
+	限ります）。
+
+{Visual}g<Plug>(dps-dial-decrement)			*v_g_<Plug>(dps-dial-decrement)*
+
+	ビジュアル選択されたテキストの被加数を、上から加算的に[count]だけ減少させ
+	ます。既存の g CTRL-A コマンドの代替です。
+
+==============================================================================
+AUGENDS									*dps-dial-augends*
+
+被加数（英語で augend）は平易な表現にすると「足される数」のことであり、
+dps-dial.vim においては増減対象となるバッファ上の文字列のことを指します。
+なお、「足す数」は加数（英語で addend）と呼び、 dps-dial.vim においては <C-a>
+や <C-x> で増減する数値を表します。
+
+標準の <C-a> 及び <C-x> で増減できるのは10進数、2進数、8進数、16進数の数値及び
+アルファベット1文字のみでしたが、dps-dial.vim では様々なものを増減させたりトグ
+ルさせたりすることができます。
+
+NUMBER									*dps-dial-augends-number*
+------
+
+数値の増減。以下の形式の辞書を |g:dps_dial#augends| に追加することで有効化され
+ます。
+
+>
+	{
+	\  'kind': 'number',
+	\  'opts': {
+	\    'natural': v:true
+	\  }
+	\}
+<
+
+オプションの意味は以下のとおりです。
+
+	natural		(boolean, default: `v:true`)
+				v:true のとき、負の数を考慮しなくなる。
+
+また以下のエイリアスがデフォルトで用意されています。
+
+'decimal'~
+
+数値のうち十進数の非負値を表します。以下の設定のエイリアスです。
+>
+	{
+	\  'kind': 'number',
+	\  'opts': {'natural': v:true}
+	\}
+<
+
+以下のような文字列にマッチし、1つインクリメントするごとにその数値を1増加させます。
+>
+	0
+	123
+	3141592
+<
+
+標準の CTRL-A と異なり、数字の先頭に `-` が付いていても考慮しません。
+
+
+DATE									*dps-dial-augends-date*
+------
+
+日付を増減します。現在は以下の表記法にのみ対応しています。
+
+* `yyyy/MM/dd`
+
+以下の形式の辞書を |g:dps_dial#augends| に追加することで有効化されます。
+
+>
+	{
+	\  'kind': 'date',
+	\  'opts': { }
+	\}
+<
+
+オプションはありません。
+
+'date'~
+
+以下の設定のエイリアスです。
+>
+	{
+	\  'kind': 'date',
+	\  'opts': { }
+	\}
+<
+
+たとえば以下の文字列があったとします。
+>
+	due date: 2020/12/31
+<
+
+`due date:` 又は `31` の上で <C-a> を押せば日付がインクリメントされ、次の日の
+日付が得られます:
+>
+	due date: 2021/01/01
+<
+
+`12` の上で <C-a> を押せば月がインクリメントされ、次の月の同じ日の日付が得られ
+ます:
+>
+	due date: 2021/01/31
+<
+
+`2020` の上で <C-a> を押せば年がインクリメントされ、次の年の同じ月日の日付が得
+られます:
+>
+	due date: 2021/12/31
+<
+
+いずれの場合もカウンタを指定することが可能であり、たとえば一週間期限を延長した
+ければ、 `due date:` 又は `31` の上で 7<C-a> と押すだけで実現できます。
+>
+	due date: 2021/01/07
+<
+
+
+CONSTANT								*dps-dial-augends-constant*
+--------
+
+任意の固定文字列を、与えられた規則に従って入れ替えます。
+以下の形式の辞書を |g:dps_dial#augends| に追加することで有効化されます。
+
+>
+	{
+	\  'kind': 'constant',
+	\  'opts': {
+	\    'elements': ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+	\    'cyclic': v:true,
+	\    'word': v:true,
+	\  }
+	\}
+<
+
+オプションの意味は以下のとおりです。
+
+	elements	(string list) [required]
+				入れ替える文字列のリスト。要素数は2以上でなければならない。
+
+	cyclic		(boolean, default: `v:true`)
+				v:true のとき、増減時に巡回するようになる。たとえば elements
+				の要素が3つであり、現在3番目の要素に合致する文字列の上にカーソ
+				ルが乗っているとする。このとき <C-a> を押せば、1番目の文字列に
+				変換される。
+				逆に、v:false のときは巡回しなくなる。先程の例では、3番目の要
+				素の上で <C-a> を押しても3番目の文字列のまま変化しなくなる。
+
+	word		(boolean, default: `v:true`)
+				v:true のときは `elements` の文字列を単語とみなす。たとえば
+				elements が `['let', 'const']` であるとき、次の例の1行目にはマ
+				ッチするが、2行目にはマッチしない。
+>
+					let a = 1;
+					lettuce++;
+<
+				にはマッチしない。v:false のときは2行目にもマッチする。
+
+
+CASE									*dps-dial-augends-case*
+------
+
+変数などの表記規則を入れ替えます。現在、4種類の表記法に対応しています。
+
+* `camelCase`
+* `snake_case`
+* `kebab-case`
+* `SCREAMING_SNAKE_CASE`
+
+以下の形式の辞書を |g:dps_dial#augends| に追加することで有効化されます。
+
+>
+	{
+	\  'kind': 'case',
+	\  'opts': {
+	\    'cases': [ 'camelCase', 'snake_case' ],
+	\    'cyclic': v:true,
+	\  }
+	\}
+<
+
+オプションの意味は以下のとおりです。
+
+	elements	(string list) [required]
+				入れ替える case のリスト。要素数は2以上でなければならず、
+				以下の文字列と「表記法含めて」完全に一致している必要がある。
+				* `camelCase`
+				* `snake_case`
+				* `kebab-case`
+				* `SCREAMING_SNAKE_CASE`
+
+	cyclic		(boolean, default: `v:true`)
+				v:true のとき、増減時に巡回するようになる。たとえば elements
+				の要素が3つであり、現在3番目の要素に合致する文字列の上にカーソ
+				ルが乗っているとする。このとき <C-a> を押せば、1番目の文字列に
+				変換される。
+				逆に、v:false のときは巡回しなくなる。先程の例では、3番目の要
+				素の上で <C-a> を押しても3番目の文字列のまま変化しなくなる。
+
+たとえば以下のように設定されていたとします。
+>
+	g:dps_dial#augends = {'kind': 'case', 'opts': {
+	\   'cases': ['camelCase', 'snake_case', 'SCREAMING_SNAKE_CASE'],
+	\   'cyclic': v:true,
+	\ }}
+<
+
+このときに
+>
+	let someString = String::new();
+<
+
+の `someString` の上で <C-a> を押せば変数名が `some_string` となり、再度 <C-a>
+を押せば `SOME_STRING` となります。さらにもう一度 <C-a> を押せば `someString`
+に戻ります。
+
+なお、複数単語で構成されていない変数名 `elems` などに対しては効果がないことに
+注意してください。1単語のみで構成されているケースでは、 camelCase と
+snake_case と kebab-case の区別を付けることが本質的に不可能だからです。
+
+
+USER									*dps-dial-augends-user*
+------
+
+Vim script の関数を用いて、好きな増減規則をユーザ定義できます。詳しくは割愛。
+
+
+==============================================================================
+ADVANCED USAGE							*dps-dial-advanced*
+
+`dps_dial` のうち、発展的ではあるものの使いこなせば便利な機能を紹介します。
+
+------------------------------------------------------------------------------
+DOT REPEAT								*dps-dial-dot-repeat*
+
+|dps_dial.vim| が提供するすべてのキーコマンドはドットリピートに対応しています。
+すなわち、"." を押すことによって直前の増減操作を繰り返すことができます。
+ただし標準の <C-a> や <C-x> とは若干挙動が異なり、増減ルールが固定されます。
+
+具体的な例を挙げましょう。現在、 |g:dps_dial#augends| は以下のように設定されて
+いると仮定します:
+>
+	g:dps_dial#augends = [ 'decimal', 'date' ]
+<
+これはすなわち、十進数の数値と `yyyy/MM/dd` 形式の日付が <C-a> によって増減可
+能であることを意味します。
+
+さて、以下のような記述が書かれたバッファをイメージしてください。
+>
+	date: 2020/11/08
+	...
+	due date of 1st report: 2020/11/23
+	...
+	due date of 2nd report: 2020/12/21
+	...
+	date of exam: 2021/01/14
+<
+
+このバッファにある全ての日付をちょうど1ヶ月延長しなければならなくなったとしま
+す。日付が大量にある場合この操作はきわめて退屈で面倒ですが、 |dps_dial.vim| を
+用いればとても Vim らしいアプローチで楽にこの操作を実現することができます。
+
+まずはいつもどおり1行目の `2020/11/08` の `11` のところにジャンプし、 <C-a> を
+タイプして日付を1ヶ月伸ばします。`2020/12/08` となったはずです。
+
+次に "/" コマンドを用いて `date` で検索し、3行目にジャンプします。
+検索文字列はなんでもよいのですが、変更したい日付の前にはいずれも `date` がある
+ことから、`date` にジャンプするのが今回は最も楽だと期待できます。
+ジャンプしたら、その直後で "." コマンドを実行してください。なんの問題もなく、
+`2020/11/23` が1ヶ月延期されるはずです。
+>
+	date: 2020/12/08
+	...
+	Due date (1st lecture): 2020/12/23
+	...
+	Due date (2nd lecture): 2020/12/21
+	...
+	Due date (3rd lecture): 2021/01/14
+<
+ここで重要なのは、もしここで "." ではなく <C-a> を押していた場合、 `1st` と書
+かれた数字が増減の対象となってしまい、 `2st` になってしまっていたという点です。
+仮に `1st` という文字列がなかったとしても、（カーソル位置が `11` にないため）
+日付が1日延長されるだけだったでしょう。
+<C-a> はコマンドが実行されるたびにその行について適切なルールを探すものの、ドッ
+トリピートを行った場合は以前に行ったルールを保持します。ここでは「日付を1ヶ月
+延ばす」という操作を保持していたため、カーソルを適切な位置に移動させずとも、自
+動的に近くにある日付の「月」のところまで移動してから増減操作を実行します。
+したがって上の例では、ひとたび検索を行った後であれば `.n.n.` とするだけですべ
+ての期限を1ヶ月延ばすことができるのです。
+
+------------------------------------------------------------------------------
+SPECIFYING REGISTER NAME				*dps-dial-specify-register*
+
+|dps_dial.vim| が提供する <C-a> 及び <C-x> は、レジスタ名を前置することで挙動
+が変化します。
+
+Alphabet Register (a, b, ..., z)~
+
+アルファベットのレジスタ名を前置すると、有効な増減ルールとして
+|g:dps_dial#augends| ではなく |g:dps_dial#augends#register#{register}| が使
+われるようになります。たとえば `"x<C-a>` と打った場合は
+|g:dps_dial#augends#register#x| が使われます。これは、特定のルールに限定して増
+減操作を行いたいときに役立ちます。
+
+単純な例として、以下のように設定されていた場合を考えます。
+>
+	g:dps_dial#augends = ['decimal', 'date']
+	g:dps_dial#augends#register#n = ['decimal']
+<
+
+このとき、
+>
+	2021/03/31
+<
+の `31` の上で <C-a> を押すと `2021/04/01` となりますが、`"n<C-a>` を押すと
+`'date'` の増減ルールがそのときに限り無効化され、`2021/03/32` となります。
+
+以下の設定を書いておけば、 `gc` と打つだけでカーソル化の変数の表記法をキャメル
+ケース・スネークケース間でトグルできるようになります。Rust と TypeScript の両
+方を頻繁に書く人にとっては重宝するでしょう。
+
+>
+	let g:dps_dial#augends#register#c = [
+	\  {"kind": "case", "opts": {"cases": ["camelCase", "snake_case"]}}
+	\]
+	nmap gc "c<Plug>(dps-dial-increment)
+<
+
+Expression Register (=)~
+
+|quote_=| は特殊なレジスタ名であり、 `"=` と打つとコマンドラインモードに入りま
+す。 <C-a> に前置する形で `"=` レジスタを用いた場合、コマンドラインモードで記
+述した文字列をエイリアスに持つような増減ルールが用いられます。
+
+たとえば |g:dps_dial#aliases| の値が以下のように設定されていたとします。
+>
+	let g:dps_dial#aliases = {
+	  'decimal': {'kind': 'number', 'opts': {}},
+	  'date': {'kind': 'date', 'opts': {}},
+	}
+<
+このとき `"=date<CR><C-a>` と打てば、 |g:dps_dial#augends| の値に関わらず日付
+がインクリメントされるようになります。
+
+------------------------------------------------------------------------------
+CUMULATIVE DOT REPEAT					*dps-dial-specify-register*
+
+ドットリピートは基本的に同じ操作を繰り返すものですが、特定のレジスタ名を前置す
+ることで挙動を累加的にすることができます。通常のドットリピートでは
+
+1. 最初に <C-a> を押したとき: カーソル下の数値が1増加する
+2. 続いて "." を押したとき: カーソル下の数値が1増加する
+3. 続いて "." を押したとき: カーソル下の数値が1増加する
+
+のように増加値が一定のままであるのに対し、累加的なドットリピートでは
+
+1. 最初に <C-a> を押したとき: カーソル下の数値が1増加する
+2. 続いて "." を押したとき: カーソル下の数値が2増加する
+3. 続いて "." を押したとき: カーソル下の数値が3増加する
+
+のように、加数そのものが増加します。なお加数はドットリピートをやめて新たに
+<C-a> や <C-x> を押したときにリセットされます。
+
+これは離れた場所にある数字に対して |v_g_CTRL-A| のような操作を適用したいときに
+便利です。
+>
+	def test0():
+		pass
+<
+という形式で、なおかつ数値が連番になった関数をいくつも作りたいとしましょう。
+マクロを使って実現することもできますが、累加的ドットリピートを使うこともできま
+す。後者を用いる場合、まずは単純に関数をヤンクして
+>
+	def test0():
+		pass
+
+	def test0():
+		pass
+
+	def test0():
+		pass
+<
+とします。その後 `def` という文字列を検索して1行目で `"1<C-a>` を押し、
+`n.n.` とすれば
+>
+	def test1():
+		pass
+
+	def test2():
+		pass
+
+	def test3():
+		pass
+<
+という結果が得られます。
+
+Numeric Register (0, 1, ..., 9)~
+
+数値レジスタを前置して `"1<C-a>` のようにすると、その直後に行われるドットリピ
+ートが累加的になります。
+
+Capital Alphabet Register (A, B, ..., Z)~
+
+大文字のアルファベットレジスタを前置して `"X<C-a>` のようにすると、その直後に
+行われるドットリピートが累加的になります。また、そのレジスタ名を小文字にしたと
+きと同じ被加数ルールが用いられるようになります。たとえば `"X<C-a>` と打った場合は
+|g:dps_dial#augends#register#x| が使われます。
+
+
+==============================================================================
+CONFIGURATIONS							*dps-dial-configurations*
+
+------------------------------------------------------------------------------
+VARIABLES								*dps-dial-variables*
+
+g:dps_dial#augends						*g:dps_dial#augends*
+		有効な増減ルール (augend) のリスト。レジスタ名などを特に指定せずに
+		<C-a> や <C-x> を押したとき、ここで設定されたルールに則って増減を行い
+		ます。
+		リストの要素は、文字列または `{'kind': '...', 'opts': { ... }}` という
+		形式の辞書です。文字列が要素に与えられた場合はエイリアスとみなされ、
+		|g:dps_dial#aliases| の辞書に基づいて変換されます。
+										*b:dps_dial_augends*
+		|b:dps_dial_augends| が存在する場合は、 |g:dps_dial#augends| の代わり
+		にそちらが使われます。これはバッファローカルな変数であり、ファイルタイ
+		プに固有の設定を行いたいときに便利です。
+
+								*g:dps_dial#augends#register#{register}*
+g:dps_dial#augends#register#{register}
+		有効な増減ルール (augend) のリスト。 `"x<C-a>` などのようにアルファベ
+		ット小文字のレジスタ名を指定して <C-a> / <C-x> を実行したときは、対応
+		する変数（先程の例では `g:dps_dial#augends#register#x`）の中身が
+		|g:dps_dial#augends| の代わりに用いられます。
+		リストの要素は、文字列または `{'kind': '...', 'opts': { ... }}` という
+		形式の辞書です。文字列が要素に与えられた場合はエイリアスとみなされ、
+		|g:dps_dial#aliases| の辞書に基づいて変換されます。
+								*b:dps_dial_augends_register_{register}*
+		|b:dps_dial_augends_register_{register}| が存在する場合は、
+		|g:dps_dial#augends#register#{register}| の代わりにそちらが使われます。
+		これはバッファローカルな変数であり、ファイルタイプに固有の設定を行いた
+		いときに便利です。
+
+g:dps_dial#default_augends				*g:dps_dial#default_augends*
+		デフォルトで用意された augends のリストです。
+
+g:dps_dial#aliases						*g:dps_dial#aliases*
+		文字列をキー、増減ルールを値とする辞書。
+		ここにキーとして記載された文字列は、 `g:dps_dial#augends` などの中で直
+		接指定することができます。
+		デフォルトの値は
+>
+	{
+	  'decimal': {'kind': 'number', 'opts': {}},
+	  'date': {'kind': 'date', 'opts': {}},
+	}
+<
+		です。
+
+
+vim:tw=78:fo=tcq2mM:ts=4:ft=help:norl:noet:fdm=marker:fen:
