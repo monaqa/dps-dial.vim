@@ -9,10 +9,43 @@ import {
   globals,
 } from "./deps.ts";
 
-import { Direction, ensureDirection } from "./type.ts";
+import { Augend, Direction, ensureDirection } from "./type.ts";
 import { toStringIdx } from "./util.ts";
 import { AugendConfig, generateAugendConfig } from "./augend.ts";
 import { DialContextHandler } from "./handler.ts";
+
+/**
+ * レジスタ名から augends を取り出す。
+ */
+async function extractAugendByRegisterName(denops: Denops, register:string) : Promise<Augend[]> {
+  let configarray: AugendConfig[];
+  if (register == "=") {
+    configarray = await denops.eval("eval(@=)") as AugendConfig[];
+    // TODO: configarray の型チェック
+    console.log({configarray});
+  } else {
+    const buflocalVarName = (['"', "+", "*"].includes(register))
+      ? `dps_dial_augends`
+      : `dps_dial_augends_register_${register}`;
+    const bufferAugendsConfig = await buffers.get(denops, buflocalVarName);
+    if (bufferAugendsConfig == null) {
+      const globalVarName = (['"', "+", "*"].includes(register))
+        ? `dps_dial#augends`
+        : `dps_dial#augends#register#${register}`;
+      configarray = await globals.get(
+        denops,
+        globalVarName,
+        [],
+      ) as AugendConfig[];
+    } else {
+      configarray = bufferAugendsConfig as AugendConfig[];
+    }
+  }
+  const augends = configarray.map((conf) =>
+    generateAugendConfig(denops, conf)
+  );
+  return Promise.resolve(augends);
+}
 
 export async function main(denops: Denops): Promise<void> {
   const handler = DialContextHandler.createHandler();
@@ -27,29 +60,11 @@ export async function main(denops: Denops): Promise<void> {
     async selectAugendNormal(count: unknown, register: unknown): Promise<void> {
       ensureString(register);
       ensureNumber(count);
+      console.log({register});
       const col = await fn.col(denops, ".");
       const line = await fn.getline(denops, ".");
 
-      const buflocalVarName = (['"', "+", "*"].includes(register))
-        ? `dps_dial_augends`
-        : `dps_dial_augends_register_${register}`;
-      let configarray: AugendConfig[];
-      const bufferAugendsConfig = await buffers.get(denops, buflocalVarName);
-      if (bufferAugendsConfig === null) {
-        const globalVarName = (['"', "+", "*"].includes(register))
-          ? `dps_dial#augends`
-          : `dps_dial#augends#register#${register}`;
-        configarray = await globals.get(
-          denops,
-          globalVarName,
-          [],
-        ) as AugendConfig[];
-      } else {
-        configarray = bufferAugendsConfig as AugendConfig[];
-      }
-      const augends = configarray.map((conf) =>
-        generateAugendConfig(denops, conf)
-      );
+      const augends = await extractAugendByRegisterName(denops, register);
       await handler.selectAugend(line, col, count, augends);
 
       return Promise.resolve();
@@ -61,7 +76,7 @@ export async function main(denops: Denops): Promise<void> {
      *
      * ビジュアルモードで呼び出される。
      */
-    async selectAugend(count: unknown, register: unknown): Promise<void> {
+    async selectAugendVisual(count: unknown, register: unknown): Promise<void> {
       ensureString(register);
       ensureNumber(count);
 
@@ -104,17 +119,7 @@ export async function main(denops: Denops): Promise<void> {
         }
       }
 
-      const varName = (['"', "+", "*"].includes(register))
-        ? `dps_dial#augends`
-        : `dps_dial#augends#register#${register}`;
-      const configarray = await globals.get(
-        denops,
-        varName,
-        [],
-      ) as AugendConfig[];
-      const augends = (configarray ?? []).map((conf) =>
-        generateAugendConfig(denops, conf)
-      );
+      const augends = await extractAugendByRegisterName(denops, register);
       await handler.selectAugend(text, 0, count, augends);
 
       return Promise.resolve();
