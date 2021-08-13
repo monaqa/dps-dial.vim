@@ -281,13 +281,13 @@ export async function main(denops: Denops): Promise<void> {
   }
 
   // default values
-  const defaultAugends = ["number", "date"];
+  const defaultAugends = ["decimal", "date"];
   globals.set(denops, "dps_dial#default_augends", defaultAugends);
   globals.set(denops, "dps_dial#augends", defaultAugends);
-  globals.set(denops, "dps_dial#augends#register#n", ["number"]);
+  globals.set(denops, "dps_dial#augends#register#n", ["decimal"]);
   globals.set(denops, "dps_dial#augends#register#d", ["date"]);
   globals.set(denops, "dps_dial#aliases", {
-    "number": {"kind": "number", "opts": {}},
+    "decimal": {"kind": "number", "opts": {}},
     "date": {"kind": "date", "opts": {}},
   });
 
