@@ -118,6 +118,6 @@ autocmd FileType python let b:dps_dial#augends = ['number', {'kind': 'constant',
 - If you type `"X<C-a>` instead of `<C-a>`,
   the increment will be performed according to the rules written in `g:dps_dial#augends#register#x` instead of `g:dps_dial#augends`, and the behavior of subsequent dot-repeat will be cumulative.
 
-### LICENSE
+## LICENSE
 
 MIT
