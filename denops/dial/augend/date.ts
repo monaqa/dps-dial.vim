@@ -27,7 +27,12 @@ export function ensureAugendConfigDate(
   ensureObject(x);
   if (Object.prototype.hasOwnProperty.call(x, "format")) {
     ensureString(x.format);
-    (AVAILABLE_FORMATS as unknown as string[]).includes(x.format);
+    if (!(AVAILABLE_FORMATS as unknown as string[]).includes(x.format)) {
+      throw new Error(
+        "Date format is invalid. Available formats: " +
+          AVAILABLE_FORMATS.join(", "),
+      );
+    }
   }
 }
 

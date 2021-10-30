@@ -13,14 +13,15 @@ import { Augend, Direction, ensureDirection } from "./type.ts";
 import { toStringIdx } from "./util.ts";
 import {
   applyAlias,
-  AugendAliases,
-  AugendConfig,
   AugendConfigOrString,
   ensureAugendAliases,
   ensureAugendConfigOrStringList,
   generateAugendConfig,
 } from "./augend.ts";
 import { DialContextHandler } from "./handler.ts";
+
+// default values
+const defaultAugends = ["decimal", "date"];
 
 /**
  * レジスタ名から augends を取り出す。
@@ -47,7 +48,7 @@ async function extractRegisterInfo(
       const globalAugendsConfig = await globals.get(
         denops,
         globalVarName,
-        [],
+        defaultAugends,
       ) as unknown;
       ensureAugendConfigOrStringList(globalAugendsConfig);
       configarray = globalAugendsConfig;
@@ -294,10 +295,7 @@ export async function main(denops: Denops): Promise<void> {
     return `<Cmd>let &opfunc="dps_dial#operator_${direction}_${mode}"<CR>g@`;
   }
 
-  // default values
-  const defaultAugends = ["decimal", "date"];
   globals.set(denops, "dps_dial#default_augends", defaultAugends);
-  globals.set(denops, "dps_dial#augends", defaultAugends);
   globals.set(denops, "dps_dial#augends#register#n", ["decimal"]);
   globals.set(denops, "dps_dial#augends#register#d", ["date"]);
   globals.set(denops, "dps_dial#aliases", {
