@@ -23,5 +23,5 @@ function dps_dial#operator_decrement_gvisual(type, ...)
 endfunction
 
 function dps_dial#register_callback(func)
-  return denops#callback#add(a:func, {'once': v:false})
+  return denops#callback#register(a:func, {'once': v:false})
 endfunction
