@@ -302,7 +302,7 @@ export async function main(denops: Denops): Promise<void> {
   globals.set(denops, "dps_dial#augends#register#d", ["date"]);
   globals.set(denops, "dps_dial#aliases", {
     "decimal": { "kind": "number", "opts": {} },
-    "date": { "kind": "date", "opts": {} },
+    "date": { "kind": "date", "opts": { format: "yyyy-MM-dd" } },
   });
 
   await execute(

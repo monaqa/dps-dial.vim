@@ -4,7 +4,11 @@ import {
   augendConstant,
   ensureAugendConfigConstant,
 } from "./augend/constant.ts";
-import { augendDate } from "./augend/date.ts";
+import {
+  AugendConfigDate,
+  augendDate,
+  ensureAugendConfigDate,
+} from "./augend/date.ts";
 import {
   AugendConfigNumber,
   augendNumber,
@@ -27,7 +31,7 @@ export type AugendConfig =
   | { kind: "number"; opts: AugendConfigNumber }
   | { kind: "constant"; opts: AugendConfigConstant }
   | { kind: "case"; opts: AugendConfigCase }
-  | { kind: "date"; opts: Record<string, unknown> }
+  | { kind: "date"; opts: AugendConfigDate }
   | { kind: "user"; opts: AugendConfigUser };
 
 export function ensureAugendConfig(
@@ -55,6 +59,7 @@ export function ensureAugendConfig(
       break;
 
     case "date":
+      ensureAugendConfigDate(conf["opts"]);
       break;
 
     case "user":
@@ -121,7 +126,7 @@ export function generateAugendConfig(
     case "user":
       return augendUser(denops, conf.opts);
     case "date":
-      return augendDate();
+      return augendDate(conf.opts);
   }
 }
 
