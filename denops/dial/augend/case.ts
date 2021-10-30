@@ -26,7 +26,9 @@ export function ensureAugendConfigCase(
   ensureObject(x);
   ensureArray(x.cases, isString);
   if (!Object.prototype.hasOwnProperty.call(x, "cases")) {
-    throw new Error("'cases' field is required for the config corresponding to 'case'.");
+    throw new Error(
+      "'cases' field is required for the config corresponding to 'case'.",
+    );
   }
   if (x.cases.length <= 1) {
     throw new Error(
@@ -35,7 +37,7 @@ export function ensureAugendConfigCase(
   }
   for (const elem of x.cases) {
     if (!AUGEND_CASES.includes(elem)) {
-      throw new Error(`Invalid case name. Valid names are: ${ AUGEND_CASES }`);
+      throw new Error(`Invalid case name. Valid names are: ${AUGEND_CASES}`);
     }
   }
   if (Object.prototype.hasOwnProperty.call(x, "cyclic")) {

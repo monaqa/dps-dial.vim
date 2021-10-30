@@ -1,59 +1,76 @@
 import { Denops, ensureArray, ensureObject } from "./deps.ts";
-import { AugendConfigConstant, augendConstant, ensureAugendConfigConstant } from "./augend/constant.ts";
+import {
+  AugendConfigConstant,
+  augendConstant,
+  ensureAugendConfigConstant,
+} from "./augend/constant.ts";
 import { augendDate } from "./augend/date.ts";
 import {
   AugendConfigNumber,
   augendNumber,
-ensureAugendConfigNumber,
+  ensureAugendConfigNumber,
 } from "./augend/number.ts";
-import { AugendConfigUser, augendUser, ensureAugendConfigUser } from "./augend/user.ts";
+import {
+  AugendConfigUser,
+  augendUser,
+  ensureAugendConfigUser,
+} from "./augend/user.ts";
 import { Augend, TextRange } from "./type.ts";
 import { toByteIdx } from "./util.ts";
 import {
   augendCase,
   AugendConfigCase,
-ensureAugendConfigCase,
+  ensureAugendConfigCase,
 } from "./augend/case.ts";
 
 export type AugendConfig =
-  | {kind: "number", opts: AugendConfigNumber}
-  | {kind: "constant", opts: AugendConfigConstant}
-  | {kind: "case", opts: AugendConfigCase}
-  | {kind: "date", opts: Record<string, unknown>}
-  | {kind: "user", opts: AugendConfigUser}
+  | { kind: "number"; opts: AugendConfigNumber }
+  | { kind: "constant"; opts: AugendConfigConstant }
+  | { kind: "case"; opts: AugendConfigCase }
+  | { kind: "date"; opts: Record<string, unknown> }
+  | { kind: "user"; opts: AugendConfigUser };
 
-export function ensureAugendConfig(conf: unknown): asserts conf is AugendConfig {
+export function ensureAugendConfig(
+  conf: unknown,
+): asserts conf is AugendConfig {
   ensureObject(conf);
-  if (!Object.prototype.hasOwnProperty.call(conf, "kind") || !Object.prototype.hasOwnProperty.call(conf, "opts")) {
-    throw new Error("Any augend config must have a field named 'kind' and 'opts'.");
+  if (
+    !Object.prototype.hasOwnProperty.call(conf, "kind") ||
+    !Object.prototype.hasOwnProperty.call(conf, "opts")
+  ) {
+    throw new Error(
+      "Any augend config must have a field named 'kind' and 'opts'.",
+    );
   }
-  switch (conf['kind']) {
+  switch (conf["kind"]) {
     case "number":
-      ensureAugendConfigNumber(conf['opts']);
+      ensureAugendConfigNumber(conf["opts"]);
       break;
     case "constant":
-      ensureAugendConfigConstant(conf['opts']);
+      ensureAugendConfigConstant(conf["opts"]);
       break;
 
     case "case":
-      ensureAugendConfigCase(conf['opts']);
+      ensureAugendConfigCase(conf["opts"]);
       break;
 
     case "date":
       break;
 
     case "user":
-      ensureAugendConfigUser(conf['opts']);
+      ensureAugendConfigUser(conf["opts"]);
       break;
 
     default:
-      throw new Error(`Unknown augend kind: ${conf['kind']}`);
+      throw new Error(`Unknown augend kind: ${conf["kind"]}`);
   }
 }
 
-export type AugendConfigOrString = string | AugendConfig
+export type AugendConfigOrString = string | AugendConfig;
 
-export function ensureAugendConfigOrStringList(xs: unknown): asserts xs is AugendConfigOrString[] {
+export function ensureAugendConfigOrStringList(
+  xs: unknown,
+): asserts xs is AugendConfigOrString[] {
   ensureArray(xs);
   for (const x of xs) {
     if (typeof x != "string") {
@@ -62,22 +79,27 @@ export function ensureAugendConfigOrStringList(xs: unknown): asserts xs is Augen
   }
 }
 
-export type AugendAliases = Record<string, AugendConfig>
+export type AugendAliases = Record<string, AugendConfig>;
 
-export function ensureAugendAliases(map: unknown): asserts map is AugendAliases {
+export function ensureAugendAliases(
+  map: unknown,
+): asserts map is AugendAliases {
   ensureObject(map);
   for (const key in map) {
-    ensureAugendConfig(map[key])
+    ensureAugendConfig(map[key]);
   }
 }
 
 /**
  * AugendConfigOrString の中に入っている文字列に対して aliases マップを適用する。
  */
-export function applyAlias(x: AugendConfigOrString, aliases: AugendAliases): AugendConfig {
+export function applyAlias(
+  x: AugendConfigOrString,
+  aliases: AugendAliases,
+): AugendConfig {
   if (typeof x == "string") {
-    if ( aliases[x] === undefined ) {
-      throw new Error(`Undefined alias. Add '${ x }' key in alias map.`);
+    if (aliases[x] === undefined) {
+      throw new Error(`Undefined alias. Add '${x}' key in alias map.`);
     }
     return aliases[x];
   } else {

@@ -11,14 +11,24 @@ import {
 
 import { Augend, Direction, ensureDirection } from "./type.ts";
 import { toStringIdx } from "./util.ts";
-import { AugendAliases, AugendConfig, applyAlias, ensureAugendAliases, ensureAugendConfigOrStringList, generateAugendConfig, AugendConfigOrString } from "./augend.ts";
+import {
+  applyAlias,
+  AugendAliases,
+  AugendConfig,
+  AugendConfigOrString,
+  ensureAugendAliases,
+  ensureAugendConfigOrStringList,
+  generateAugendConfig,
+} from "./augend.ts";
 import { DialContextHandler } from "./handler.ts";
 
 /**
  * レジスタ名から augends を取り出す。
  */
-async function extractRegisterInfo(denops: Denops, register:string) : Promise<{augends: Augend[], isCumulative: boolean}> {
-
+async function extractRegisterInfo(
+  denops: Denops,
+  register: string,
+): Promise<{ augends: Augend[]; isCumulative: boolean }> {
   const aliases = await globals.get(denops, "dps_dial#aliases", []) as unknown;
   ensureAugendAliases(aliases);
 
@@ -47,14 +57,12 @@ async function extractRegisterInfo(denops: Denops, register:string) : Promise<{a
     }
   }
   const augends = configarray
-  .map((confOrString) => applyAlias(confOrString, aliases))
-  .map((conf) =>
-    generateAugendConfig(denops, conf)
-  );
+    .map((confOrString) => applyAlias(confOrString, aliases))
+    .map((conf) => generateAugendConfig(denops, conf));
 
   const isCumulative = register.match(/[A-Z0-9]/) != null;
 
-  return Promise.resolve({augends, isCumulative});
+  return Promise.resolve({ augends, isCumulative });
 }
 
 export async function main(denops: Denops): Promise<void> {
@@ -74,7 +82,13 @@ export async function main(denops: Denops): Promise<void> {
       const line = await fn.getline(denops, ".");
 
       const info = await extractRegisterInfo(denops, register);
-      await handler.selectAugend(line, col, count, info.augends, info.isCumulative);
+      await handler.selectAugend(
+        line,
+        col,
+        count,
+        info.augends,
+        info.isCumulative,
+      );
 
       return Promise.resolve();
     },
@@ -287,8 +301,8 @@ export async function main(denops: Denops): Promise<void> {
   globals.set(denops, "dps_dial#augends#register#n", ["decimal"]);
   globals.set(denops, "dps_dial#augends#register#d", ["date"]);
   globals.set(denops, "dps_dial#aliases", {
-    "decimal": {"kind": "number", "opts": {}},
-    "date": {"kind": "date", "opts": {}},
+    "decimal": { "kind": "number", "opts": {} },
+    "date": { "kind": "date", "opts": {} },
   });
 
   await execute(

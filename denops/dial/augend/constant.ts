@@ -15,7 +15,9 @@ export function ensureAugendConfigConstant(
   ensureObject(x);
   ensureArray(x.elements, isString);
   if (!Object.prototype.hasOwnProperty.call(x, "elements")) {
-    throw new Error("'elements' field is required for the config corresponding to 'constant'.");
+    throw new Error(
+      "'elements' field is required for the config corresponding to 'constant'.",
+    );
   }
   if (x.elements.length <= 1) {
     throw new Error(
