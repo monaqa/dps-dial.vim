@@ -2,18 +2,15 @@ import { findPatternAfterCursor } from "../augend.ts";
 import { ensureArray, ensureBoolean, ensureObject, isString } from "../deps.ts";
 import { Augend, TextRange } from "../type.ts";
 
-type AugendCases =
-  | "camelCase"
-  | "snake_case"
-  | "kebab-case"
-  | "SCREAMING_SNAKE_CASE";
-
 const AUGEND_CASES = [
+  "PascalCase",
   "camelCase",
   "snake_case",
   "kebab-case",
   "SCREAMING_SNAKE_CASE",
-];
+] as const;
+
+type AugendCases = typeof AUGEND_CASES[number];
 
 export type AugendConfigCase = {
   cases: AugendCases[];
@@ -36,7 +33,7 @@ export function ensureAugendConfigCase(
     );
   }
   for (const elem of x.cases) {
-    if (!AUGEND_CASES.includes(elem)) {
+    if (!(AUGEND_CASES as unknown as string[]).includes(elem)) {
       throw new Error(`Invalid case name. Valid names are: ${AUGEND_CASES}`);
     }
   }
@@ -75,6 +72,29 @@ const camelCasePattern: CasePattern = {
       [s[0].toUpperCase(), s.substr(1)].join("")
     );
     return [terms[0], ...capitalizedTerms].join("");
+  },
+};
+
+const pascalCasePattern: CasePattern = {
+  wordRegexp: /\b([A-Z][a-z0-9]*)+\b/g,
+
+  extractTerms(word) {
+    const result = word.matchAll(this.wordRegexp).next().value as
+      | string[]
+      | undefined;
+    if (result == undefined) {
+      return null;
+    }
+    const terms = word.replace(/[A-Z]/g, (letter) => `,${letter.toLowerCase()}`)
+      .split(",");
+    return terms.slice(1);
+  },
+
+  toIdentifier(terms) {
+    const capitalizedTerms = terms.map((s) =>
+      [s[0].toUpperCase(), s.substr(1)].join("")
+    );
+    return capitalizedTerms.join("");
   },
 };
 
@@ -137,6 +157,7 @@ const casePatternMap = {
   "snake_case": snakeCasePattern,
   "kebab-case": kebabCasePattern,
   "SCREAMING_SNAKE_CASE": screamingSnakeCasePattern,
+  "PascalCase": pascalCasePattern
 };
 
 export function augendCase(config: AugendConfigCase): Augend {
