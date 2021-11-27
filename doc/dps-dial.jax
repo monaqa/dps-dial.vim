@@ -301,6 +301,7 @@ CASE									*dps-dial-augends-case*
 
 変数などの表記規則を入れ替えます。現在、4種類の表記法に対応しています。
 
+* `PascalCase`
 * `camelCase`
 * `snake_case`
 * `kebab-case`
@@ -585,22 +586,53 @@ g:dps_dial#default_augends				*g:dps_dial#default_augends*
 		デフォルトで用意された augends のリスト。
 		この変数はあくまで参照用の値であり、中身を変更しても何も変化しません。
 
+										*dps-dial-aliases*
 g:dps_dial#aliases						*g:dps_dial#aliases*
-		文字列をキー、増減ルールを値とする辞書。
-		ここにキーとして記載された文字列は、 `g:dps_dial#augends` などの中で直
-		接指定することができます。
-		デフォルトの値は以下のとおりです。
+		文字列をキー、増減ルールを値とする辞書。ここにキーとして記載された文字
+		列は、 `g:dps_dial#augends` などの中で直接指定することができます。デフ
+		ォルトでは以下の値を持っていますが、ユーザの手での追加・削除・書き換え
+		が可能です。
+
 >
-	  {
+	let g:dps_dial#aliases = {
 	\   'decimal': {'kind': 'number', 'opts': {}},
+	\   'decimal-integer': {'kind': 'number', 'opts': {'natural': v:false}},
+	\   'binary': {'kind': 'number', 'opts': {'radix': 2, 'prefix': '0b'}},
+	\   'octal': {'kind': 'number', 'opts': {'radix': 8, 'prefix': '0o'}},
+	\   'hex': {'kind': 'number', 'opts': {'radix': 16, 'prefix': '0x'}},
 	\   'date': {'kind': 'date', 'opts': { 'format': 'yyyy-MM-dd' }},
 	\   'date-hyphen': {'kind': 'date', 'opts': { 'format': 'yyyy-MM-dd' }},
 	\   'date-slash': {'kind': 'date', 'opts': { 'format': 'yyyy/MM/dd' }},
 	\   'case': { 'kind': 'case', 'opts': {
 	\     'cases': ['camelCase', 'snake_case'],
-	\     'cyclic': true
+	\     'cyclic': v:true,
+	\   }},
+	\   'alpha': { 'kind': 'constant', 'opts': {
+	\     'elements': ['a', 'b', ..., 'z'],  " 省略
+	\     'word': v:true,
+	\     'cyclic': v:false,
+	\   }},
+	\   'Alpha': { 'kind': 'constant', 'opts': {
+	\     'elements': ['A', 'B', ..., 'Z'],  " 省略
+	\     'word': v:true,
+	\     'cyclic': v:false,
 	\   }},
 	\ }
 <
+
+		これらは以下のような意味を持ちます。
+
+		decimal		十進数で表記された非負整数。(e.g. `0`, `15`, `123`)
+		decimal-integer
+					十進数で表記された整数 (e.g. `0`, `-15`, `123`)
+		binary		2進数で表記された非負整数 (e.g. `0b01`, `0b1101`)
+		octal		8進数で表記された非負整数 (e.g. `0o07`, `0b7153`)
+		hex			16進数で表記された非負整数 (e.g. `0x1a`, `0xcf2b`)
+		date-hyphen	`yyyy-MM-dd` 形式の日付 (e.g. `2021-04-21`)
+		date-slash	`yyyy/MM/dd` 形式の日付 (e.g. `2021/04/21`)
+		date		`date-hyphen` に同じ。
+		case		変数名（camelCase と snake_case の相互変換）。
+		alpha		小文字のアルファベット1文字。 (e.g. `a`, `b`, ..., `z`)
+		Alpha		大文字のアルファベット1文字。 (e.g. `A`, `B`, ..., `Z`)
 
 vim:tw=78:fo=tcq2mM:ts=4:ft=help:norl:noet:fdm=marker:fen:
