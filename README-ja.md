@@ -114,6 +114,40 @@ autocmd FileType python let b:dps_dial#augends = ['number', {'kind': 'constant',
   `g:dps_dial#augends#register#x` に書かれたルールに基づいて増減操作が行われ、
   なおかつ直後に実行されるドットリピートの挙動が累加的になります。
 
+### ユーザによる増減ルールの拡張（例）
+
+マークダウンのヘッダの個数を増減する例です。
+vimrc にて以下のように書けば、 `<Space>a` / `<Space>x` でヘッダを増減することが可能となります。
+
+```vim
+function! MarkdownHeaderFind(line, cursor)
+  let match = matchstr(a:line, '^#\+')
+  if match !=# ''
+    return {"from": 0, "to": strlen(match)}
+  endif
+  return v:null
+endfunction
+
+function! MarkdownHeaderAdd(text, addend, cursor)
+  let n_header = strlen(a:text)
+  let n_header = min([6, max([1, n_header + a:addend])])
+  let text = repeat('#', n_header)
+  let cursor = 1
+  return {'text': text, 'cursor': cursor}
+endfunction
+
+let s:id_find = dps_dial#register_callback(function("MarkdownHeaderFind"))
+let s:id_add = dps_dial#register_callback(function("MarkdownHeaderAdd"))
+
+augroup dps-dial
+  autocmd FileType markdown let b:dps_dial_augends_register_h = [ {"kind": "user", "opts": {"find": s:id_find, "add": s:id_add}} ]
+  autocmd FileType markdown nmap <buffer> <Space>a "h<Plug>(dps-dial-increment)
+  autocmd FileType markdown nmap <buffer> <Space>x "h<Plug>(dps-dial-decrement)
+  autocmd FileType markdown vmap <buffer> <Space>a "h<Plug>(dps-dial-increment)
+  autocmd FileType markdown vmap <buffer> <Space>x "h<Plug>(dps-dial-decrement)
+augroup END
+```
+
 ## LICENSE
 
 MIT
