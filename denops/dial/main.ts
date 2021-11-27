@@ -13,6 +13,7 @@ import { Augend, Direction, ensureDirection } from "./type.ts";
 import { toStringIdx } from "./util.ts";
 import {
   applyAlias,
+  AugendConfig,
   AugendConfigOrString,
   ensureAugendAliases,
   ensureAugendConfigOrStringList,
@@ -21,6 +22,13 @@ import {
 import { DialContextHandler } from "./handler.ts";
 
 // default values
+const defaultAliases: Record<string, AugendConfig> = {
+    "decimal": { "kind": "number", "opts": {} },
+    "date": { "kind": "date", "opts": { format: "yyyy-MM-dd" } },
+    "date-hyphen": { "kind": "date", "opts": { format: "yyyy-MM-dd" } },
+    "date-slash": { "kind": "date", "opts": { format: "yyyy/MM/dd" } },
+    "case": { "kind": "case", "opts": { cases: ["camelCase", "snake_case"], cyclic: true } },
+}
 const defaultAugends = ["decimal", "date-hyphen", "date-slash"];
 
 /**
@@ -282,6 +290,11 @@ export async function main(denops: Denops): Promise<void> {
     },
   };
 
+  // `dps_dial#default_augends` は `defaultAugends` の写しであり、変更を想定していない。
+  // ユーザが変更を望むときは `dps_dial#augends` をいじる。
+  globals.set(denops, "dps_dial#default_augends", defaultAugends);
+  globals.set(denops, "dps_dial#aliases", defaultAliases);
+
   const cmdSelectNormal =
     `<Cmd>call denops#request("${denops.name}", "selectAugendNormal", [v:count1, v:register])<CR>`;
   const cmdSelectVisual =
@@ -294,16 +307,6 @@ export async function main(denops: Denops): Promise<void> {
   ) {
     return `<Cmd>let &opfunc="dps_dial#operator_${direction}_${mode}"<CR>g@`;
   }
-
-  globals.set(denops, "dps_dial#default_augends", defaultAugends);
-  globals.set(denops, "dps_dial#augends#register#n", ["decimal"]);
-  globals.set(denops, "dps_dial#augends#register#d", ["date-hyphen", "date-slash"]);
-  globals.set(denops, "dps_dial#aliases", {
-    "decimal": { "kind": "number", "opts": {} },
-    "date": { "kind": "date", "opts": { format: "yyyy-MM-dd" } },
-    "date-hyphen": { "kind": "date", "opts": { format: "yyyy-MM-dd" } },
-    "date-slash": { "kind": "date", "opts": { format: "yyyy/MM/dd" } },
-  });
 
   await execute(
     denops,

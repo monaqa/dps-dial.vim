@@ -581,6 +581,7 @@ g:dps_dial#augends#register#{register}
 
 g:dps_dial#default_augends				*g:dps_dial#default_augends*
 		デフォルトで用意された augends のリストです。
+		この変数はあくまで参照用の値であり、中身を変更しても何も変化しません。
 
 g:dps_dial#aliases						*g:dps_dial#aliases*
 		文字列をキー、増減ルールを値とする辞書。
@@ -588,10 +589,16 @@ g:dps_dial#aliases						*g:dps_dial#aliases*
 		接指定することができます。
 		デフォルトの値は
 >
-	{
-	  'decimal': {'kind': 'number', 'opts': {}},
-	  'date': {'kind': 'date', 'opts': {}},
-	}
+	  {
+	\   'decimal': {'kind': 'number', 'opts': {}},
+	\   'date': {'kind': 'date', 'opts': { 'format': 'yyyy-MM-dd' }},
+	\   'date-hyphen': {'kind': 'date', 'opts': { 'format': 'yyyy-MM-dd' }},
+	\   'date-slash': {'kind': 'date', 'opts': { 'format': 'yyyy/MM/dd' }},
+	\   'case': { 'kind': 'case', 'opts': {
+	\     'cases': ['camelCase', 'snake_case'],
+	\     'cyclic': true
+	\   }},
+	\ }
 <
 		です。
 
