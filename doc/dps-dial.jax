@@ -559,6 +559,7 @@ g:dps_dial#augends						*g:dps_dial#augends*
 		リストの要素は、文字列または `{'kind': '...', 'opts': { ... }}` という
 		形式の辞書です。文字列が要素に与えられた場合はエイリアスとみなされ、
 		|g:dps_dial#aliases| の辞書に基づいて変換されます。
+
 										*b:dps_dial_augends*
 		|b:dps_dial_augends| が存在する場合は、 |g:dps_dial#augends| の代わり
 		にそちらが使われます。これはバッファローカルな変数であり、ファイルタイ
@@ -573,6 +574,7 @@ g:dps_dial#augends#register#{register}
 		リストの要素は、文字列または `{'kind': '...', 'opts': { ... }}` という
 		形式の辞書です。文字列が要素に与えられた場合はエイリアスとみなされ、
 		|g:dps_dial#aliases| の辞書に基づいて変換されます。
+
 								*b:dps_dial_augends_register_{register}*
 		|b:dps_dial_augends_register_{register}| が存在する場合は、
 		|g:dps_dial#augends#register#{register}| の代わりにそちらが使われます。
@@ -580,14 +582,14 @@ g:dps_dial#augends#register#{register}
 		いときに便利です。
 
 g:dps_dial#default_augends				*g:dps_dial#default_augends*
-		デフォルトで用意された augends のリストです。
+		デフォルトで用意された augends のリスト。
 		この変数はあくまで参照用の値であり、中身を変更しても何も変化しません。
 
 g:dps_dial#aliases						*g:dps_dial#aliases*
 		文字列をキー、増減ルールを値とする辞書。
 		ここにキーとして記載された文字列は、 `g:dps_dial#augends` などの中で直
 		接指定することができます。
-		デフォルトの値は
+		デフォルトの値は以下のとおりです。
 >
 	  {
 	\   'decimal': {'kind': 'number', 'opts': {}},
@@ -600,7 +602,5 @@ g:dps_dial#aliases						*g:dps_dial#aliases*
 	\   }},
 	\ }
 <
-		です。
-
 
 vim:tw=78:fo=tcq2mM:ts=4:ft=help:norl:noet:fdm=marker:fen:
