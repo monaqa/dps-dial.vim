@@ -116,8 +116,8 @@ autocmd FileType python let b:dps_dial#augends = ['number', {'kind': 'constant',
 
 ### ユーザによる増減ルールの拡張（例）
 
-マークダウンのヘッダの個数を増減する例です。
-vimrc にて以下のように書けば、 `<Space>a` / `<Space>x` でヘッダを増減することが可能となります。
+マークダウンのヘッダの個数を増減する例です。 vimrc にて以下のように書けば、 `<Space>a` / `<Space>x`
+でヘッダを増減することが可能となります。
 
 ```vim
 function! MarkdownHeaderFind(line, cursor)

@@ -23,13 +23,36 @@ import { DialContextHandler } from "./handler.ts";
 
 // default values
 const defaultAliases: Record<string, AugendConfig> = {
-    "decimal": { "kind": "number", "opts": {} },
-    "date": { "kind": "date", "opts": { format: "yyyy-MM-dd" } },
-    "date-hyphen": { "kind": "date", "opts": { format: "yyyy-MM-dd" } },
-    "date-slash": { "kind": "date", "opts": { format: "yyyy/MM/dd" } },
-    "case": { "kind": "case", "opts": { cases: ["camelCase", "snake_case"], cyclic: true } },
-}
-const defaultAugends = ["decimal", "date-hyphen", "date-slash"];
+  "decimal": { kind: "number", opts: {} },
+  "decimal-integer": { kind: "number", opts: { natural: false } },
+  "binary": { kind: "number", opts: { radix: 2, prefix: "0b" } },
+  "octal": { kind: "number", opts: { radix: 8, prefix: "0o" } },
+  "hex": { kind: "number", opts: { radix: 16, prefix: "0x" } },
+  "date": { kind: "date", opts: { format: "yyyy-MM-dd" } },
+  "date-hyphen": { kind: "date", opts: { format: "yyyy-MM-dd" } },
+  "date-slash": { kind: "date", opts: { format: "yyyy/MM/dd" } },
+  "case": {
+    kind: "case",
+    opts: { cases: ["camelCase", "snake_case"], cyclic: true },
+  },
+  "alpha": {
+    kind: "constant",
+    opts: {
+      cyclic: false,
+      word: true,
+      elements: "abcdefghijklmnopqrstuvwxyz".split(""),
+    },
+  },
+  "Alpha": {
+    kind: "constant",
+    opts: {
+      cyclic: false,
+      word: true,
+      elements: "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split(""),
+    },
+  },
+};
+const defaultAugends = ["decimal", "hex", "date-hyphen", "date-slash"];
 
 /**
  * レジスタ名から augends を取り出す。

@@ -4,7 +4,7 @@ import { Augend } from "../type.ts";
 import { toByteIdx } from "../util.ts";
 
 export type AugendConfigConstant = {
-  elements: [string, string, ...string[]];
+  elements: string[];
   cyclic?: boolean;
   word?: boolean;
 };

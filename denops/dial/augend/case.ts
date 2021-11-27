@@ -157,7 +157,7 @@ const casePatternMap = {
   "snake_case": snakeCasePattern,
   "kebab-case": kebabCasePattern,
   "SCREAMING_SNAKE_CASE": screamingSnakeCasePattern,
-  "PascalCase": pascalCasePattern
+  "PascalCase": pascalCasePattern,
 };
 
 export function augendCase(config: AugendConfigCase): Augend {
