@@ -135,8 +135,8 @@ Visual Mode~
 		2021/09/26
 		2021/10/03
 <
-	のように、1週間ごとの日付が得られます（日付の被加数 `date` が有効のときに
-	限ります）。
+	のように、1週間ごとの日付が得られます（日付の被加数 `date-slash` が有効の
+	ときに限ります）。
 
 {Visual}g<Plug>(dps-dial-decrement)			*v_g_<Plug>(dps-dial-decrement)*
 
@@ -165,7 +165,9 @@ NUMBER									*dps-dial-augends-number*
 	{
 	\  'kind': 'number',
 	\  'opts': {
-	\    'natural': v:true
+	\    'natural': v:true,
+	\    'radix': 10,
+	\    'prefix': "",
 	\  }
 	\}
 <
@@ -175,15 +177,20 @@ NUMBER									*dps-dial-augends-number*
 	natural		(boolean, default: `v:true`)
 				v:true のとき、負の数を考慮しなくなる。
 
+	radix		(number, default: `10`) 基数。
+
+	prefix		(string, default: `""`) 数値の最初に付く `0x` などの文字列。
+
 また以下のエイリアスがデフォルトで用意されています。
 
+									*dps-dial-alias-decimal*
 'decimal'~
 
 数値のうち十進数の非負値を表します。以下の設定のエイリアスです。
 >
 	{
 	\  'kind': 'number',
-	\  'opts': {'natural': v:true}
+	\  'opts': {}
 	\}
 <
 
@@ -196,32 +203,102 @@ NUMBER									*dps-dial-augends-number*
 
 標準の CTRL-A と異なり、数字の先頭に `-` が付いていても考慮しません。
 
+									*dps-dial-alias-decimal-integer*
+'decimal-integer'~
+
+十進整数を表します。以下の設定のエイリアスです。
+>
+	{
+	\  'kind': 'number',
+	\  'opts': { 'natural': v:false }
+	\}
+<
+
+以下のような文字列にマッチし、1つインクリメントするごとにその数値を1増加させます。
+>
+	0
+	-123
+	3141592
+<
+
+									*dps-dial-alias-binary*
+'binary'~
+
+2進数の非負整数を表します。以下の設定のエイリアスです。
+>
+	{
+	\  'kind': 'number',
+	\  'opts': { 'radix': 2, 'prefix': '0b' }
+	\}
+<
+
+									*dps-dial-alias-octal*
+'octal'~
+
+8進数の非負整数を表します。以下の設定のエイリアスです。
+>
+	{
+	\  'kind': 'number',
+	\  'opts': { 'radix': 8, 'prefix': '0o' }
+	\}
+<
+
+									*dps-dial-alias-hex*
+'hex'~
+
+16進数の非負整数を表します。以下の設定のエイリアスです。
+>
+	{
+	\  'kind': 'number',
+	\  'opts': { 'radix': 16, 'prefix': '0x' }
+	\}
+<
+
 
 DATE									*dps-dial-augends-date*
 ------
 
-日付を増減します。現在は以下の表記法にのみ対応しています。
+日付を増減します。現在は以下の表記法に対応しています。
 
+* `yyyy-MM-dd`
 * `yyyy/MM/dd`
+* `MM/dd`
+* `M/d`
+* `HH:mm`
+* `HH:mm:ss`
 
 以下の形式の辞書を |g:dps_dial#augends| に追加することで有効化されます。
 
 >
 	{
 	\  'kind': 'date',
-	\  'opts': { }
+	\  'opts': { 'format': 'yyyy-MM-dd', 'only_valid': v:false }
 	\}
 <
 
-オプションはありません。
+オプションの意味は以下のとおりです。
 
+	format		(string) 捜査対象とする日付のフォーマット。
+
+	only_valid	(boolean, default: `v:false`)
+				true のとき、そのフォーマットの標準形と完全に合致する有効な日
+				付にのみマッチします。たとえば `M/d` というフォーマットを指定
+				したとき、
+				* `11/3` : 有効な日付のためマッチする
+				* `11/03`: 有効な日付だが、標準形と一致しないためマッチしない
+				* `13/3` : 無効な日付のためマッチしない
+				という挙動となります。
+
+また以下のエイリアスがデフォルトで用意されています。
+
+									*dps-dial-alias-date*
 'date'~
 
 以下の設定のエイリアスです。
 >
 	{
 	\  'kind': 'date',
-	\  'opts': { }
+	\  'opts': { 'format': 'yyyy-MM-dd' }
 	\}
 <
 
@@ -254,6 +331,21 @@ DATE									*dps-dial-augends-date*
 	due date: 2021/01/07
 <
 
+									*dps-dial-alias-date-slash*
+'date-hyphen'~
+
+|dps-dial-alias-date| と同様です。
+
+									*dps-dial-alias-date-slash*
+'date-slash'~
+
+以下の設定のエイリアスです。
+>
+	{
+	\  'kind': 'date',
+	\  'opts': { 'format': 'yyyy/MM/dd' }
+	\}
+<
 
 CONSTANT								*dps-dial-augends-constant*
 --------
@@ -295,11 +387,44 @@ CONSTANT								*dps-dial-augends-constant*
 <
 				にはマッチしない。v:false のときは2行目にもマッチする。
 
+以下のエイリアスがデフォルトで用意されています。
+
+									*dps-dial-alias-alpha*
+alpha~
+
+小文字のアルファベット1文字を辞書順に増減させます。以下の設定のエイリアスです。
+
+>
+	{
+	\ 'kind': 'constant',
+	\ 'opts': {
+	\     'elements': ['a', 'b', ..., 'z'],  " 省略
+	\     'word': v:true,
+	\     'cyclic': v:false,
+	\   }
+	\ },
+<
+
+									*dps-dial-alias-Alpha*
+Alpha~
+
+大文字のアルファベット1文字を辞書順に増減させます。以下の設定のエイリアスです。
+
+>
+	{
+	\ 'kind': 'constant',
+	\ 'opts': {
+	\     'elements': ['A', 'B', ..., 'Z'],  " 省略
+	\     'word': v:true,
+	\     'cyclic': v:false,
+	\   }
+	\ },
+<
 
 CASE									*dps-dial-augends-case*
 ------
 
-変数などの表記規則を入れ替えます。現在、4種類の表記法に対応しています。
+変数などの表記規則を入れ替えます。現在、5種類の表記法に対応しています。
 
 * `PascalCase`
 * `camelCase`
@@ -321,7 +446,7 @@ CASE									*dps-dial-augends-case*
 
 オプションの意味は以下のとおりです。
 
-	elements	(string list) [required]
+	cases		(string list) [required]
 				入れ替える case のリスト。要素数は2以上でなければならず、
 				以下の文字列と「表記法含めて」完全に一致している必要がある。
 				* `camelCase`
@@ -358,12 +483,54 @@ CASE									*dps-dial-augends-case*
 注意してください。1単語のみで構成されているケースでは、 camelCase と
 snake_case と kebab-case の区別を付けることが本質的に不可能だからです。
 
+以下のエイリアスが用意されています。
+
+									*dps-dial-alias-case*
+case~
+
+camelCase と snake_case を相互変換します。以下の設定のエイリアスです。
+>
+	{
+	\  'kind': 'case',
+	\  'opts': { 'cases': ['camelCase', 'snake_case'], 'cyclic': v:true },
+	\}
+<
 
 USER									*dps-dial-augends-user*
 ------
 
-Vim script の関数を用いて、好きな増減規則をユーザ定義できます。詳しくは割愛。
+Vim script の関数を用いて、好きな増減規則をユーザ定義できます。たとえば
+`"h<C-a>` でマークダウンのヘッダの数を増減できるようにするには以下のように設定
+します。
 
+>
+	function! MarkdownHeaderFind(line, cursor)
+	  let match = matchstr(a:line, '^#\+')
+	  if match !=# ''
+		return {"from": 0, "to": strlen(match)}
+	  endif
+	  return v:null
+	endfunction
+
+	function! MarkdownHeaderAdd(text, addend, cursor)
+	  let n_header = strlen(a:text)
+	  let n_header = min([6, max([1, n_header + a:addend])])
+	  let text = repeat('#', n_header)
+	  let cursor = 1
+	  return {'text': text, 'cursor': cursor}
+	endfunction
+
+	let s:id_find = dps_dial#register_callback(function("MarkdownHeaderFind"))
+	let s:id_add = dps_dial#register_callback(function("MarkdownHeaderAdd"))
+
+	augroup dps-dial
+	  autocmd FileType markdown let b:dps_dial_augends_register_h = [ {"kind": "user", "opts": {"find": s:id_find, "add": s:id_add}} ]
+	  autocmd FileType markdown nmap <buffer> <Space>a "h<Plug>(dps-dial-increment)
+	  autocmd FileType markdown nmap <buffer> <Space>x "h<Plug>(dps-dial-decrement)
+	  autocmd FileType markdown vmap <buffer> <Space>a "h<Plug>(dps-dial-increment)
+	  autocmd FileType markdown vmap <buffer> <Space>x "h<Plug>(dps-dial-decrement)
+	augroup END
+<
 
 ==============================================================================
 ADVANCED USAGE							*dps-dial-advanced*
@@ -380,7 +547,7 @@ DOT REPEAT								*dps-dial-dot-repeat*
 具体的な例を挙げましょう。現在、 |g:dps_dial#augends| は以下のように設定されて
 いると仮定します:
 >
-	g:dps_dial#augends = [ 'decimal', 'date' ]
+	g:dps_dial#augends = [ 'decimal', 'date-slash' ]
 <
 これはすなわち、十進数の数値と `yyyy/MM/dd` 形式の日付が <C-a> によって増減可
 能であることを意味します。
@@ -444,7 +611,7 @@ Alphabet Register (a, b, ..., z)~
 
 単純な例として、以下のように設定されていた場合を考えます。
 >
-	g:dps_dial#augends = ['decimal', 'date']
+	g:dps_dial#augends = ['decimal', 'date-slash']
 	g:dps_dial#augends#register#n = ['decimal']
 <
 

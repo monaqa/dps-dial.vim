@@ -91,8 +91,8 @@ date of exam: 2021/01/14
 
 ```vim
 let g:dps_dial#augends = [
-\   'number',
-\   'date',
+\   'decimal',
+\   'date-slash',
 \   {'kind': 'constant', 'opts': {'elements': ['true', 'false']}},
 \   {'kind': 'case', 'opts': {'cases': ['camelCase', 'snake_case'], 'cyclic': v:true}},
 \ ]
@@ -101,7 +101,7 @@ let g:dps_dial#augends = [
 ただし、バッファローカルな設定値 `b:dps_dial_augends` がある場合はそちらが設定として使われます。
 
 ```vim
-autocmd FileType python let b:dps_dial#augends = ['number', {'kind': 'constant', 'opts': {'elements': ['True', 'False']}}]
+autocmd FileType python let b:dps_dial#augends = ['decimal', {'kind': 'constant', 'opts': {'elements': ['True', 'False']}}]
 ```
 
 ### レジスタ名指定による挙動の変更
@@ -146,6 +146,14 @@ augroup dps-dial
   autocmd FileType markdown vmap <buffer> <Space>a "h<Plug>(dps-dial-increment)
   autocmd FileType markdown vmap <buffer> <Space>x "h<Plug>(dps-dial-decrement)
 augroup END
+```
+
+### その他の機能
+
+augend の一覧・エイリアスの一覧については Vim 上のヘルプを参照してください。
+
+```
+:help dps-dial.txt
 ```
 
 ## LICENSE

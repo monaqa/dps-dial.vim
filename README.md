@@ -109,8 +109,8 @@ The increment/decrement is done according to the rules set in
 
 ```vim
 let g:dps_dial#augends = [
-\   'number',
-\   'date',
+\   'decimal',
+\   'date-slash',
 \   {'kind': 'constant', 'opts': {'elements': ['true', 'false']}},
 \   {'kind': 'case', 'opts': {'cases': ['camelCase', 'snake_case'], 'cyclic': v:true}},
 \ ]
@@ -120,10 +120,10 @@ Note that if there is a buffer-local variable `b:dps_dial_augends`, it will be
 used as the configuration.
 
 ```vim
-autocmd FileType python let b:dps_dial#augends = ['number', {'kind': 'constant', 'opts': {'elements': ['True', 'False']}}]
+autocmd FileType python let b:dps_dial#augends = ['decimal', {'kind': 'constant', 'opts': {'elements': ['True', 'False']}}]
 ```
 
-### Specify Augend Rules with Register
+### Specify Augend Rules with Register Name
 
 - If you type `"x<C-a>` instead of `<C-a>`, the increment will be performed
   according to the rules written in `g:dps_dial#augends#register#x` instead of
@@ -135,6 +135,14 @@ autocmd FileType python let b:dps_dial#augends = ['number', {'kind': 'constant',
   according to the rules written in `g:dps_dial#augends#register#x` instead of
   `g:dps_dial#augends`, and the behavior of subsequent dot-repeat will be
   cumulative.
+
+### Other Features
+
+See vim help for a list of augend and aliases (currently only Japanese).
+
+```
+:help dps-dial.txt
+```
 
 ## LICENSE
 
