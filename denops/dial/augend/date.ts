@@ -1,6 +1,7 @@
 import { findPatternAfterCursor } from "../augend.ts";
 import { ensureObject, ensureString, format, parse } from "../deps.ts";
 import { Augend } from "../type.ts";
+import { toStringIdx } from "../util.ts";
 
 type DateKind =
   | "year"
@@ -11,8 +12,8 @@ type DateKind =
   | "second"
   | "millis";
 
-type DetermineDateKind = (cursor: number | null) => DateKind;
-type DetermineCursorPos = (item: DateKind) => number | undefined;
+type DetermineDateKind = (text: string, cursor: number | null) => DateKind;
+type DetermineCursorPos = (text: string, item: DateKind) => number | undefined;
 
 const AVAILABLE_FORMATS = ["yyyy-MM-dd", "yyyy/MM/dd"] as const;
 type AvailableFormats = typeof AVAILABLE_FORMATS[number];
@@ -68,7 +69,11 @@ class AugendDate implements Augend {
       return Promise.resolve(null);
     }
     const relCursor = (cursor != null) ? (cursor - range.from) : null;
-    this.kind = this.determineDateKind(relCursor);
+    const { from, to } = range;
+    const fromUtf16 = toStringIdx(line, from);
+    const toUtf16 = toStringIdx(line, to);
+    const text = line.substr(fromUtf16, toUtf16 - fromUtf16);
+    this.kind = this.determineDateKind(text, relCursor);
     return Promise.resolve(range);
   }
 
@@ -96,7 +101,7 @@ class AugendDate implements Augend {
         break;
     }
     text = format(date, dateFormat);
-    const cursor = this.determineCursorPos(this.kind) ?? text.length;
+    const cursor = this.determineCursorPos(text, this.kind) ?? text.length;
     return Promise.resolve({ text, cursor });
   }
 }
@@ -104,7 +109,7 @@ class AugendDate implements Augend {
 export function augendDate(config: AugendConfigDate): Augend {
   switch (config.format) {
     case "yyyy/MM/dd": {
-      const determineDateKind = (cursor: number | null) => {
+      const determineDateKind = (_: string, cursor: number | null) => {
         if (cursor == null) {
           return "day";
         }
@@ -116,7 +121,7 @@ export function augendDate(config: AugendConfigDate): Augend {
         }
         return "day";
       };
-      const determineCursorPos = (item: DateKind) => {
+      const determineCursorPos = (_: string, item: DateKind) => {
         switch (item) {
           case "year":
             return 4;
@@ -135,7 +140,7 @@ export function augendDate(config: AugendConfigDate): Augend {
     }
 
     case "yyyy-MM-dd": {
-      const determineDateKind = (cursor: number | null) => {
+      const determineDateKind = (_: string, cursor: number | null) => {
         if (cursor == null) {
           return "day";
         }
@@ -147,7 +152,7 @@ export function augendDate(config: AugendConfigDate): Augend {
         }
         return "day";
       };
-      const determineCursorPos = (item: DateKind) => {
+      const determineCursorPos = (_: string, item: DateKind) => {
         switch (item) {
           case "year":
             return 4;
@@ -164,5 +169,6 @@ export function augendDate(config: AugendConfigDate): Augend {
         determineCursorPos,
       );
     }
+
   }
 }
