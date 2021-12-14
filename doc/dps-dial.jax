@@ -347,6 +347,37 @@ DATE									*dps-dial-augends-date*
 	\}
 <
 
+COLOR									*dps-dial-augends-color*
+--------
+
+`#rrggbb` の形式に従う HEX color です。
+以下の形式の辞書を |g:dps_dial#augends| に追加することで有効化されます。
+
+>
+	{
+	\  'kind': 'color',
+	\  'opts': {}
+	\}
+<
+
+オプションのフィールドはありません。以下のエイリアスがデフォルトで用意されてい
+ます。
+
+									*dps-dial-alias-color*
+color~
+
+`#rrggbb` の形式の色を増減させます。`rr`, `gg`, `bb` の場所にカーソルがある場
+合はそれぞれ R, G, B の成分だけが、`#` またはそれ以前の場所にカーソルがある場
+合は RGB 全ての成分が増減の対象となります。
+
+>
+	{
+	\ 'kind': 'color',
+	\ 'opts': {}
+	\ },
+<
+
+
 CONSTANT								*dps-dial-augends-constant*
 --------
 
