@@ -26,11 +26,13 @@ import {
   AugendConfigCase,
   ensureAugendConfigCase,
 } from "./augend/case.ts";
+import { augendColor, AugendConfigColor, ensureAugendConfigColor } from "./augend/color.ts";
 
 export type AugendConfig =
   | { kind: "number"; opts: AugendConfigNumber }
-  | { kind: "constant"; opts: AugendConfigConstant }
   | { kind: "case"; opts: AugendConfigCase }
+  | { kind: "constant"; opts: AugendConfigConstant }
+  | { kind: "color"; opts: AugendConfigColor }
   | { kind: "date"; opts: AugendConfigDate }
   | { kind: "user"; opts: AugendConfigUser };
 
@@ -52,6 +54,10 @@ export function ensureAugendConfig(
       break;
     case "constant":
       ensureAugendConfigConstant(conf["opts"]);
+      break;
+
+    case "color":
+      ensureAugendConfigColor(conf["opts"]);
       break;
 
     case "case":
@@ -121,6 +127,8 @@ export function generateAugendConfig(
       return augendNumber(conf.opts);
     case "case":
       return augendCase(conf.opts);
+    case "color":
+      return augendColor(conf.opts);
     case "constant":
       return augendConstant(conf.opts);
     case "user":

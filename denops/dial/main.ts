@@ -31,6 +31,7 @@ const defaultAliases: Record<string, AugendConfig> = {
   "date": { kind: "date", opts: { format: "yyyy-MM-dd" } },
   "date-hyphen": { kind: "date", opts: { format: "yyyy-MM-dd" } },
   "date-slash": { kind: "date", opts: { format: "yyyy/MM/dd" } },
+  "color": { kind: "color", opts: {} },
   "case": {
     kind: "case",
     opts: { cases: ["camelCase", "snake_case"], cyclic: true },
