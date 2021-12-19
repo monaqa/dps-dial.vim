@@ -108,12 +108,21 @@ The increment/decrement is done according to the rules set in
 `g:dps_dial#augends`.
 
 ```vim
-let g:dps_dial#augends = [
-\   'decimal',
-\   'date-slash',
-\   {'kind': 'constant', 'opts': {'elements': ['true', 'false']}},
-\   {'kind': 'case', 'opts': {'cases': ['camelCase', 'snake_case'], 'cyclic': v:true}},
-\ ]
+function! s:dps_dial_settings() abort
+  let g:dps_dial#augends += ['boolean']
+  call extend(g:dps_dial#aliases, {
+  \   'boolean': {
+  \     'kind': 'constant',
+  \     'opts': {
+  \       'elements': ['true', 'false'],
+  \       'word': v:true,
+  \       'cyclic': v:true,
+  \     },
+  \   },
+  \ })
+endfunction
+
+autocmd User DenopsPluginPost:dial call <SID>dps_dial_settings()
 ```
 
 Note that if there is a buffer-local variable `b:dps_dial_augends`, it will be

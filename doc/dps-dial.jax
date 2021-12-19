@@ -751,6 +751,28 @@ CONFIGURATIONS							*dps-dial-configurations*
 ------------------------------------------------------------------------------
 VARIABLES								*dps-dial-variables*
 
+これらの変数は *DenopsPluginPost:dial* 発火時に設定されるため、
+ユーザは *autocmd* を使って *DenopsPluginPost* イベントのタイミングで
+設定を行う必要があります。
+
+>
+	function! s:dps_dial_settings() abort
+	  let g:dps_dial#augends += ['boolean']
+	  call extend(g:dps_dial#aliases, {
+	  \   'boolean': {
+	  \     'kind': 'constant',
+	  \     'opts': {
+	  \       'elements': ['true', 'false'],
+	  \       'word': v:true,
+	  \       'cyclic': v:true,
+	  \     },
+	  \   },
+	  \ })
+	endfunction
+
+	autocmd User DenopsPluginPost:dial call <SID>dps_dial_settings()
+<
+
 g:dps_dial#augends						*g:dps_dial#augends*
 		有効な増減ルール (augend) のリスト。レジスタ名などを特に指定せずに
 		<C-a> や <C-x> を押したとき、ここで設定されたルールに則って増減を行い
