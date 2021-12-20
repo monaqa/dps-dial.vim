@@ -331,7 +331,7 @@ DATE									*dps-dial-augends-date*
 	due date: 2021/01/07
 <
 
-									*dps-dial-alias-date-slash*
+									*dps-dial-alias-date-hyphen*
 'date-hyphen'~
 
 |dps-dial-alias-date| と同様です。
