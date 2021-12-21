@@ -1,4 +1,4 @@
-*dps-dial.txt*  Enhanced CTRL-A / CTRL-X powered by |denops.vim|
+*dps-dial.txt*  |denops.vim| を使って CTRL-A / CTRL-X 拡張
 
 Vimの標準機能である CTRL-A / CTRL-X を拡張し、英数字に限らない様々な文字列を
 インクリメント/デクリメントできるようにするパッケージです。
@@ -681,7 +681,7 @@ Expression Register (=)~
 がインクリメントされるようになります。
 
 ------------------------------------------------------------------------------
-CUMULATIVE DOT REPEAT					*dps-dial-specify-register*
+CUMULATIVE DOT REPEAT					*dps-dial-cumulative-dot-repeat*
 
 ドットリピートは基本的に同じ操作を繰り返すものですが、特定のレジスタ名を前置す
 ることで挙動を累加的にすることができます。通常のドットリピートでは
