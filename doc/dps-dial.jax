@@ -1,4 +1,4 @@
-*dps-dial.txt*  Enhanced CTRL-A / CTRL-X powered by |denops.vim|
+*dps-dial.txt* 日本語ヘルプ  Enhanced CTRL-A / CTRL-X powered by |denops.vim|
 
 Vimの標準機能である CTRL-A / CTRL-X を拡張し、英数字に限らない様々な文字列を
 インクリメント/デクリメントできるようにするパッケージです。
