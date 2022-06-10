@@ -316,8 +316,8 @@ export async function main(denops: Denops): Promise<void> {
 
   // `dps_dial#default_augends` は `defaultAugends` の写しであり、変更を想定していない。
   // ユーザが変更を望むときは `dps_dial#augends` をいじる。
-  globals.set(denops, "dps_dial#default_augends", defaultAugends);
-  globals.set(denops, "dps_dial#aliases", defaultAliases);
+  await globals.set(denops, "dps_dial#default_augends", defaultAugends);
+  await globals.set(denops, "dps_dial#aliases", defaultAliases);
 
   const cmdSelectNormal =
     `<Cmd>call denops#request("${denops.name}", "selectAugendNormal", [v:count1, v:register])<CR>`;
